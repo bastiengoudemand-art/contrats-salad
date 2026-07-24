@@ -181,6 +181,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
   <nav class="tabs" id="tabs">
     <button class="tab active" data-tab="apercu">Vue d'ensemble</button>
     <button class="tab" data-tab="echeances">À traiter <span class="cnt" id="cntEch"></span></button>
+    <button class="tab" data-tab="valider">À valider <span class="cnt" id="cntValid"></span></button>
     <button class="tab" data-tab="compare">Comparaison</button>
     <button class="tab" data-tab="tous">Tous les contrats <span class="cnt" id="cntTous"></span></button>
     <button class="tab" data-tab="historique">Historique <span class="cnt" id="cntHist"></span></button>
@@ -253,6 +254,15 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
         <th class="noSort">Actions</th>
       </tr></thead><tbody id="allBody"></tbody></table></div>
       <div class="note" id="allCount"></div>
+    </div>
+  </section>
+
+  <section id="valider">
+    <div class="card"><h2>Contrats à valider</h2>
+      <p class="hint">Contrats importés automatiquement depuis le Drive partagé. Vérifie et complète (surtout le <b>montant</b>), puis « Valider » pour les intégrer au dashboard — ou « Supprimer » si non pertinent.</p>
+      <div class="tableScroll"><table><thead><tr>
+        <th>Restaurant</th><th>Prestataire</th><th>Contrat</th><th>Gestion</th><th class="num">Montant HT</th><th class="num">Préavis</th><th>Durée</th><th class="noSort">Actions</th>
+      </tr></thead><tbody id="validBody"></tbody></table></div>
     </div>
   </section>
 
@@ -432,8 +442,9 @@ function derive(c){
   else if(o.days_to_deadline<=120)st='bientot'; else st='ok';
   o.statut=st; return o;
 }
-const active=()=>STATE.filter(c=>!c.archived).map(derive);
+const active=()=>STATE.filter(c=>!c.archived&&!c.pending).map(derive);
 const archivedList=()=>STATE.filter(c=>c.archived).map(derive);
+const pendingList=()=>STATE.filter(c=>c.pending&&!c.archived).map(derive);
 
 /* ---------- format ---------- */
 const eur=n=>(n||0).toLocaleString('fr-FR',{maximumFractionDigits:0})+' €';
@@ -457,6 +468,7 @@ function refresh(){
   document.getElementById('cntTous').textContent=A.length;
   document.getElementById('cntArch').textContent=archivedList().length;
   document.getElementById('cntHist').textContent=HISTORY.length;
+  document.getElementById('cntValid').textContent=pendingList().length;
   document.getElementById('kpis').innerHTML=[['Contrats suivis',A.length,''],['Coût annuel HT',eur(total),''],['Restaurants',RESTOS.length,''],['Préavis passés',nPasse,'alert'],['Urgents (≤60 j)',nUrg,'warn'],['À venir (≤120 j)',nBientot,'warn']].map(([l,v,c])=>`<div class="kpi ${c}"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('');
   const statOrder=['preavis_passe','urgent','bientot','ok','expire','inconnu'],sc={};A.forEach(d=>sc[d.statut]=(sc[d.statut]||0)+1);
   const colMap={preavis_passe:'var(--critical)',urgent:'var(--serious)',bientot:'var(--warning)',ok:'var(--good)',expire:'var(--muted)',inconnu:'var(--muted)'};
@@ -468,8 +480,23 @@ function refresh(){
   fillSelect(document.getElementById('fRest'),RESTOS,'Tous les restaurants');
   fillSelect(document.getElementById('tRest'),RESTOS,'Tous les restaurants');
   fillSelect(document.getElementById('hRest'),RESTOS,'Tous les restaurants');
-  renderEch(A);renderAll(A);renderCompare(A,RA);renderMatrix(A,RA,RESTOS,total);renderArch();renderHist();
+  renderEch(A);renderAll(A);renderCompare(A,RA);renderMatrix(A,RA,RESTOS,total);renderArch();renderHist();renderValider();
 }
+function renderValider(){
+  const P=pendingList();const body=document.getElementById('validBody');
+  if(!P.length){body.innerHTML='<tr><td colspan="8" class="empty" style="text-align:center;padding:22px">Aucun contrat en attente. Demande à Claude « importe les nouveaux contrats » pour synchroniser le Drive partagé.</td></tr>';return;}
+  body.innerHTML=P.map(d=>`<tr>
+    <td>${esc(d.restaurant)}</td>
+    <td>${esc(d.prestataire)}</td>
+    <td>${esc(d.contrat)}</td>
+    <td>${esc(d.gestion||'')}</td>
+    <td class="num">${d.total?eur(d.total):(d.eur_ht?eur(d.eur_ht):'<span class="nolink">à saisir</span>')}</td>
+    <td class="num">${d.preavis_mois!=null?d.preavis_mois+' mois':'—'}</td>
+    <td>${esc(d.duree||'')}</td>
+    <td><div class="actioncell">${linkBtn(d)}<button class="btn sm editBtn" data-id="${d.id}">Modifier</button><button class="btn sm primary validBtn" data-id="${d.id}">Valider</button><button class="btn sm danger delBtn" data-id="${d.id}">Supprimer</button></div></td>
+  </tr>`).join('');
+}
+async function validateC(id){const c=STATE.find(x=>String(x.id)===String(id));if(!c)return;await sb.from('contracts').update({pending:false,updated_at:new Date().toISOString(),updated_by:ME}).eq('id',id);await histInsert([{contract_id:id,restaurant:c.restaurant,prestataire:c.prestataire,contrat:c.contrat,action:'create',changed_by:ME,note:'Import Drive validé'}]);await reloadAll();}
 function renderActionTable(container,rows){
   if(!rows.length){container.innerHTML='<div class="empty">Aucun contrat sur cet horizon.</div>';return;}
   container.innerHTML=`<div class="tableScroll"><table><thead><tr><th>Restaurant</th><th>Prestataire</th><th>Contrat</th><th class="num">Coût HT/an</th><th>Échéance</th><th>Limite préavis</th><th class="num">Jours</th><th>Statut</th></tr></thead><tbody>${rows.map(d=>`<tr><td>${esc(d.restaurant)}</td><td>${esc(d.prestataire)}</td><td>${esc(d.contrat)}</td><td class="num">${d.total?eur(d.total):'—'}</td><td class="datachip">${d.prochaine_fr||'—'}</td><td class="datachip">${d.deadline_fr||'—'}</td><td class="num">${d.days_to_deadline!==null?d.days_to_deadline:'—'}</td><td>${pill(d.statut)}</td></tr>`).join('')}</tbody></table></div>`;
@@ -558,6 +585,7 @@ document.addEventListener('click',e=>{
   const ed=e.target.closest('.editBtn'); if(ed){openEdit(ed.dataset.id);return;}
   const ar=e.target.closest('.archBtn'); if(ar){openArchive(ar.dataset.id);return;}
   const re=e.target.closest('.restoreBtn'); if(re){restoreC(re.dataset.id);return;}
+  const va=e.target.closest('.validBtn'); if(va){validateC(va.dataset.id);return;}
   const de=e.target.closest('.delBtn'); if(de){if(confirm('Supprimer définitivement ? (l\'historique est conservé)'))deleteC(de.dataset.id);return;}
 });
 
