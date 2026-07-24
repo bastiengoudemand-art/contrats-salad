@@ -134,11 +134,23 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
   <div class="login-box">
     <div class="lock">🔒</div>
     <h1>Dashboard Contrats — Salad &amp; Co</h1>
-    <p>Connecte-toi avec ton adresse e-mail professionnelle. Tu recevras un lien de connexion sécurisé (pas de mot de passe à retenir).</p>
-    <label for="loginEmail">Adresse e-mail</label>
-    <input id="loginEmail" type="email" placeholder="prenom.nom@saladandco.fr" autocomplete="email">
-    <button id="loginBtn">Recevoir mon lien de connexion</button>
-    <div class="login-msg" id="loginMsg"></div>
+    <div id="signinForm">
+      <p>Connecte-toi avec ton adresse e-mail professionnelle et ton mot de passe.</p>
+      <label for="loginEmail">Adresse e-mail</label>
+      <input id="loginEmail" type="email" placeholder="prenom.nom@saladandco.fr" autocomplete="email">
+      <label for="loginPass" style="display:block;margin-top:12px">Mot de passe</label>
+      <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+      <button id="loginBtn">Se connecter</button>
+      <div class="login-msg" id="loginMsg"></div>
+      <p style="margin:12px 0 0;font-size:12.5px"><a href="#" id="resetLink" style="color:var(--s1);font-weight:600;text-decoration:none">Première connexion ou mot de passe oublié ?</a></p>
+    </div>
+    <div id="setpassForm" class="hidden">
+      <p>Choisis ton mot de passe pour accéder au dashboard.</p>
+      <label for="newPass">Nouveau mot de passe</label>
+      <input id="newPass" type="password" placeholder="Au moins 8 caractères" autocomplete="new-password">
+      <button id="setpassBtn">Enregistrer le mot de passe</button>
+      <div class="login-msg" id="setpassMsg"></div>
+    </div>
   </div>
 </div>
 
@@ -309,22 +321,55 @@ const TODAY=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(
 
 /* ---------- AUTH ---------- */
 const loginEl=document.getElementById('login'),appEl=document.getElementById('app');
+const signinForm=document.getElementById('signinForm'),setpassForm=document.getElementById('setpassForm');
+const loginMsg=document.getElementById('loginMsg'),setpassMsg=document.getElementById('setpassMsg');
+let RECOVERY=false;
+const validEmail=e=>/^[^@]+@[^@]+\.[^@]+$/.test(e);
 document.getElementById('loginBtn').onclick=async()=>{
   const email=document.getElementById('loginEmail').value.trim().toLowerCase();
-  const msg=document.getElementById('loginMsg');
-  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){msg.className='login-msg err';msg.textContent='Adresse e-mail invalide.';return;}
-  if(!(email in NAMES)){msg.className='login-msg err';msg.textContent="Cette adresse n'est pas autorisée à accéder au dashboard.";return;}
-  document.getElementById('loginBtn').disabled=true;msg.className='login-msg';msg.textContent='Envoi en cours…';
-  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+window.location.pathname,shouldCreateUser:true}});
+  const pass=document.getElementById('loginPass').value;
+  if(!validEmail(email)){loginMsg.className='login-msg err';loginMsg.textContent='Adresse e-mail invalide.';return;}
+  if(!(email in NAMES)){loginMsg.className='login-msg err';loginMsg.textContent="Cette adresse n'est pas autorisée à accéder au dashboard.";return;}
+  if(!pass){loginMsg.className='login-msg err';loginMsg.textContent='Entre ton mot de passe.';return;}
+  document.getElementById('loginBtn').disabled=true;loginMsg.className='login-msg';loginMsg.textContent='Connexion…';
+  const {error}=await sb.auth.signInWithPassword({email,password:pass});
   document.getElementById('loginBtn').disabled=false;
-  if(error){msg.className='login-msg err';msg.textContent='Erreur : '+error.message;}
-  else{msg.className='login-msg ok';msg.textContent='✅ Lien envoyé ! Vérifie ta boîte mail ('+email+') et clique sur le lien pour te connecter.';}
+  if(error){loginMsg.className='login-msg err';loginMsg.textContent=/invalid login|credential/i.test(error.message||'')?"E-mail ou mot de passe incorrect. Première connexion ? Clique sur le lien ci-dessous pour définir ton mot de passe.":'Erreur : '+error.message;}
 };
-document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginBtn').click();});
+document.getElementById('resetLink').onclick=async(ev)=>{
+  ev.preventDefault();
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  if(!validEmail(email)){loginMsg.className='login-msg err';loginMsg.textContent='Entre d’abord ton adresse e-mail ci-dessus.';return;}
+  if(!(email in NAMES)){loginMsg.className='login-msg err';loginMsg.textContent="Cette adresse n'est pas autorisée à accéder au dashboard.";return;}
+  loginMsg.className='login-msg';loginMsg.textContent='Envoi en cours…';
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  if(error){loginMsg.className='login-msg err';loginMsg.textContent='Erreur : '+error.message;}
+  else{loginMsg.className='login-msg ok';loginMsg.textContent='✅ E-mail envoyé à '+email+'. Clique sur le lien reçu pour définir ton mot de passe (une seule fois).';}
+};
+document.getElementById('setpassBtn').onclick=async()=>{
+  const np=document.getElementById('newPass').value;
+  if(!np||np.length<8){setpassMsg.className='login-msg err';setpassMsg.textContent='Au moins 8 caractères.';return;}
+  document.getElementById('setpassBtn').disabled=true;setpassMsg.className='login-msg';setpassMsg.textContent='Enregistrement…';
+  const {error}=await sb.auth.updateUser({password:np});
+  document.getElementById('setpassBtn').disabled=false;
+  if(error){setpassMsg.className='login-msg err';setpassMsg.textContent='Erreur : '+error.message;}
+  else{setpassMsg.className='login-msg ok';setpassMsg.textContent='✅ Mot de passe enregistré !';RECOVERY=false;const {data}=await sb.auth.getSession();if(data.session&&data.session.user)onLogin(data.session.user);}
+};
+document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginBtn').click();});
+document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});
+document.getElementById('newPass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('setpassBtn').click();});
 document.getElementById('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload();};
 
-sb.auth.onAuthStateChange((_e,session)=>{ if(session&&session.user){onLogin(session.user);} });
-(async()=>{const {data}=await sb.auth.getSession(); if(data.session&&data.session.user)onLogin(data.session.user);})();
+sb.auth.onAuthStateChange((ev,session)=>{
+  if(ev==='PASSWORD_RECOVERY'){RECOVERY=true;signinForm.classList.add('hidden');setpassForm.classList.remove('hidden');document.getElementById('newPass').focus();return;}
+  if(RECOVERY)return;
+  if(session&&session.user){onLogin(session.user);}
+});
+(async()=>{
+  if(/type=recovery/.test(location.hash)){RECOVERY=true;signinForm.classList.add('hidden');setpassForm.classList.remove('hidden');}
+  const {data}=await sb.auth.getSession();
+  if(!RECOVERY&&data.session&&data.session.user)onLogin(data.session.user);
+})();
 
 async function onLogin(user){
   ME=user.email.toLowerCase();
