@@ -315,7 +315,7 @@ document.getElementById('loginBtn').onclick=async()=>{
   if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){msg.className='login-msg err';msg.textContent='Adresse e-mail invalide.';return;}
   if(!(email in NAMES)){msg.className='login-msg err';msg.textContent="Cette adresse n'est pas autorisée à accéder au dashboard.";return;}
   document.getElementById('loginBtn').disabled=true;msg.className='login-msg';msg.textContent='Envoi en cours…';
-  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin,shouldCreateUser:true}});
+  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+window.location.pathname,shouldCreateUser:true}});
   document.getElementById('loginBtn').disabled=false;
   if(error){msg.className='login-msg err';msg.textContent='Erreur : '+error.message;}
   else{msg.className='login-msg ok';msg.textContent='✅ Lien envoyé ! Vérifie ta boîte mail ('+email+') et clique sur le lien pour te connecter.';}
