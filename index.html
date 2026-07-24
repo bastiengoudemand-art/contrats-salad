@@ -186,6 +186,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     <button class="tab" data-tab="tous">Tous les contrats <span class="cnt" id="cntTous"></span></button>
     <button class="tab" data-tab="historique">Historique <span class="cnt" id="cntHist"></span></button>
     <button class="tab" data-tab="archives">Archives <span class="cnt" id="cntArch"></span></button>
+    <button class="tab" data-tab="acces" id="tabAcces" style="display:none">Accès <span class="cnt" id="cntUsers"></span></button>
   </nav>
 
   <section id="apercu" class="active">
@@ -286,6 +287,20 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     </div>
   </section>
 
+  <section id="acces">
+    <div class="card"><h2>Gestion des accès</h2>
+      <p class="hint">Réservé aux administrateurs. Ajoute un utilisateur (il pourra se connecter avec l'e-mail et le mot de passe que tu choisis), réinitialise un mot de passe, ou retire un accès. Les mots de passe sont chiffrés par Supabase — ils ne sont jamais affichés ensuite.</p>
+      <div class="filters" style="align-items:flex-end;gap:12px">
+        <div><label style="display:block;margin-bottom:3px">E-mail</label><input id="auEmail" type="email" placeholder="prenom.nom@saladandco.fr" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);min-width:220px"></div>
+        <div><label style="display:block;margin-bottom:3px">Nom affiché</label><input id="auName" type="text" placeholder="Prénom" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);min-width:130px"></div>
+        <div><label style="display:block;margin-bottom:3px">Mot de passe</label><input id="auPass" type="text" placeholder="min. 8 caractères" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);min-width:160px"></div>
+        <button class="btn primary" id="auAdd">＋ Ajouter l'utilisateur</button>
+      </div>
+      <div class="login-msg" id="auMsg" style="min-height:0;margin-top:8px"></div>
+      <div class="tableScroll" style="margin-top:12px"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th class="noSort">Actions</th></tr></thead><tbody id="auBody"></tbody></table></div>
+    </div>
+  </section>
+
   <p class="note">Données partagées (Supabase). Source initiale : « Contrats Salad » du 20/07/2026. Historique enregistré depuis la mise en base.</p>
 </div>
 
@@ -328,11 +343,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 <script>
 const SUPABASE_URL="https://wplolvjziqqvvcydvfxs.supabase.co";
 const SUPABASE_KEY="sb_publishable__ETgYHnd7kBRJ-4QIkrxPw_UzPxo0dp";
-const NAMES={
-  "bastien.goudemand@saladandco.fr":"Bastien",
-  "vincent.mondoloni@saladandco.fr":"Vincent",
-  "sebastien.gregoire@saladandco.fr":"Sébastien"
-};
+let NAMES={}, ADMINS=new Set(), USERS=[];
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let ME=null, STATE=[], HISTORY=[];
 const TODAY=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());})();
@@ -346,6 +357,7 @@ const validEmail=e=>/^[^@]+@[^@]+\.[^@]+$/.test(e);
 document.getElementById('loginBtn').onclick=async()=>{
   const email=document.getElementById('loginEmail').value.trim().toLowerCase();
   const pass=document.getElementById('loginPass').value;
+  if(!Object.keys(NAMES).length)await loadUsers();
   if(!validEmail(email)){loginMsg.className='login-msg err';loginMsg.textContent='Adresse e-mail invalide.';return;}
   if(!(email in NAMES)){loginMsg.className='login-msg err';loginMsg.textContent="Cette adresse n'est pas autorisée à accéder au dashboard.";return;}
   if(!pass){loginMsg.className='login-msg err';loginMsg.textContent='Entre ton mot de passe.';return;}
@@ -396,13 +408,17 @@ sb.auth.onAuthStateChange((ev,session)=>{
 });
 (async()=>{
   if(/type=recovery/.test(location.hash)){RECOVERY=true;signinForm.classList.add('hidden');setpassForm.classList.remove('hidden');}
+  await loadUsers();
   const {data}=await sb.auth.getSession();
   if(!RECOVERY&&data.session&&data.session.user)onLogin(data.session.user);
 })();
 
 async function onLogin(user){
   ME=user.email.toLowerCase();
+  if(!Object.keys(NAMES).length)await loadUsers();
+  if(!(ME in NAMES)){await sb.auth.signOut();appEl.classList.add('hidden');loginEl.classList.remove('hidden');loginMsg.className='login-msg err';loginMsg.textContent="Cette adresse n'est pas/plus autorisée à accéder au dashboard.";return;}
   document.getElementById('whoName').textContent=(NAMES[ME]||ME);
+  document.getElementById('tabAcces').style.display=ADMINS.has(ME)?'':'none';
   loginEl.classList.add('hidden'); appEl.classList.remove('hidden');
   document.getElementById('today').textContent='au '+TODAY.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
   await reloadAll();
@@ -419,6 +435,9 @@ async function loadHistory(){
   const {data}=await sb.from('contract_history').select('*').order('changed_at',{ascending:false}).limit(1000);
   HISTORY=data||[];
 }
+async function loadUsers(){try{const {data}=await sb.from('contract_users').select('email,name,is_admin,uid');USERS=data||[];NAMES={};ADMINS=new Set();USERS.forEach(u=>{const e=String(u.email).toLowerCase();NAMES[e]=u.name;if(u.is_admin)ADMINS.add(e);});}catch(e){}}
+async function callAdmin(payload){const {data:{session}}=await sb.auth.getSession();const tok=session?session.access_token:'';const r=await fetch(SUPABASE_URL+'/functions/v1/admin-users',{method:'POST',headers:{'Authorization':'Bearer '+tok,'apikey':SUPABASE_KEY,'content-type':'application/json'},body:JSON.stringify(payload)});return r.json().catch(()=>({error:'réponse illisible'}));}
+function renderAcces(){const body=document.getElementById('auBody');if(!body)return;const cu=document.getElementById('cntUsers');if(cu)cu.textContent=USERS.length;body.innerHTML=USERS.slice().sort((a,b)=>((b.is_admin?1:0)-(a.is_admin?1:0))||String(a.name||'').localeCompare(String(b.name||''),'fr')).map(u=>`<tr><td>${esc(u.name||'')}</td><td>${esc(u.email)}</td><td>${u.is_admin?'<b>Admin</b>':'Utilisateur'}</td><td><div class="actioncell"><button class="btn sm" data-act="reset" data-email="${esc(u.email)}" data-uid="${esc(u.uid||'')}">Réinit. mot de passe</button>${u.is_admin?'':`<button class="btn sm danger" data-act="remove" data-email="${esc(u.email)}" data-uid="${esc(u.uid||'')}" data-name="${esc(u.name||'')}">Retirer</button>`}</div></td></tr>`).join('');}
 const num=v=>v==null||v===''?null:Number(v);
 
 /* ---------- derived ---------- */
@@ -480,7 +499,7 @@ function refresh(){
   fillSelect(document.getElementById('fRest'),RESTOS,'Tous les restaurants');
   fillSelect(document.getElementById('tRest'),RESTOS,'Tous les restaurants');
   fillSelect(document.getElementById('hRest'),RESTOS,'Tous les restaurants');
-  renderEch(A);renderAll(A);renderCompare(A,RA);renderMatrix(A,RA,RESTOS,total);renderArch();renderHist();renderValider();
+  renderEch(A);renderAll(A);renderCompare(A,RA);renderMatrix(A,RA,RESTOS,total);renderArch();renderHist();renderValider();renderAcces();
 }
 function renderValider(){
   const P=pendingList();const body=document.getElementById('validBody');
@@ -602,6 +621,25 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ME)reload
 
 /* tabs / theme */
 document.querySelectorAll('.tab').forEach(t=>{t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('#app section').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.getElementById(t.dataset.tab).classList.add('active');};});
+/* ---------- ACCÈS (admin) ---------- */
+document.getElementById('auAdd').onclick=async()=>{
+  const email=document.getElementById('auEmail').value.trim().toLowerCase();
+  const name=document.getElementById('auName').value.trim();
+  const pass=document.getElementById('auPass').value;
+  const m=document.getElementById('auMsg');
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){m.className='login-msg err';m.textContent='E-mail invalide.';return;}
+  if(!name){m.className='login-msg err';m.textContent='Indique un nom.';return;}
+  if(!pass||pass.length<8){m.className='login-msg err';m.textContent='Mot de passe : 8 caractères minimum.';return;}
+  document.getElementById('auAdd').disabled=true;m.className='login-msg';m.textContent='Création…';
+  const res=await callAdmin({action:'create',email,name,password:pass});
+  document.getElementById('auAdd').disabled=false;
+  if(res&&res.error){m.className='login-msg err';m.textContent='Erreur : '+res.error;}
+  else{m.className='login-msg ok';m.textContent='✅ Utilisateur ajouté. Communique-lui son e-mail et son mot de passe.';document.getElementById('auEmail').value='';document.getElementById('auName').value='';document.getElementById('auPass').value='';await loadUsers();renderAcces();}
+};
+document.addEventListener('click',async e=>{
+  const rb=e.target.closest('[data-act="reset"]'); if(rb){const email=rb.dataset.email,uid=rb.dataset.uid;const np=prompt('Nouveau mot de passe pour '+email+' (8 caractères minimum) :');if(np===null)return;if(np.length<8){alert('Mot de passe : 8 caractères minimum.');return;}const res=await callAdmin({action:'reset',email,uid,password:np});alert(res&&res.error?('Erreur : '+res.error):'✅ Mot de passe réinitialisé.');return;}
+  const xb=e.target.closest('[data-act="remove"]'); if(xb){const email=xb.dataset.email,uid=xb.dataset.uid,nm=xb.dataset.name;if(!confirm("Retirer l'accès de "+(nm||email)+" ? Son compte sera supprimé."))return;const res=await callAdmin({action:'delete',email,uid});if(res&&res.error){alert('Erreur : '+res.error);}else{await loadUsers();renderAcces();}return;}
+});
 const tb=document.getElementById('themeBtn');tb.onclick=()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'light':'dark');tb.textContent=d?'🌙':'☀️';};
 
 /* ---------- MODAL add / edit ---------- */
