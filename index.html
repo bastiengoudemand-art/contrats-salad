@@ -166,9 +166,17 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <button class="btn primary" id="addBtn">＋ Ajouter</button>
       <button class="btn" id="refreshBtn" title="Rafraîchir les données">⟳</button>
       <button class="btn" id="themeBtn">🌙</button>
+      <button class="btn" id="pwBtn" title="Définir / changer mon mot de passe">🔑 Mot de passe</button>
       <button class="btn" id="logoutBtn">Déconnexion</button>
     </div>
   </header>
+
+  <div id="pwPanel" class="hidden" style="max-width:1220px;margin:0 auto 14px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <b style="font-size:14px">Définir / changer mon mot de passe :</b>
+    <input id="pwNew" type="password" placeholder="Nouveau mot de passe (min. 8 caractères)" autocomplete="new-password" style="padding:9px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);font-size:14px;min-width:240px">
+    <button class="btn primary" id="pwSave">Enregistrer</button>
+    <span id="pwMsg" style="font-size:13px"></span>
+  </div>
 
   <nav class="tabs" id="tabs">
     <button class="tab active" data-tab="apercu">Vue d'ensemble</button>
@@ -359,6 +367,17 @@ document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='
 document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});
 document.getElementById('newPass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('setpassBtn').click();});
 document.getElementById('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload();};
+document.getElementById('pwBtn').onclick=()=>{const p=document.getElementById('pwPanel');p.classList.toggle('hidden');if(!p.classList.contains('hidden'))document.getElementById('pwNew').focus();};
+document.getElementById('pwSave').onclick=async()=>{
+  const np=document.getElementById('pwNew').value,m=document.getElementById('pwMsg');
+  if(!np||np.length<8){m.style.color='var(--critical)';m.textContent='Au moins 8 caractères.';return;}
+  document.getElementById('pwSave').disabled=true;m.style.color='var(--text-secondary)';m.textContent='Enregistrement…';
+  const {error}=await sb.auth.updateUser({password:np});
+  document.getElementById('pwSave').disabled=false;
+  if(error){m.style.color='var(--critical)';m.textContent='Erreur : '+error.message;}
+  else{m.style.color='var(--good-ink)';m.textContent='✅ Mot de passe enregistré. Utilise-le à ta prochaine connexion.';document.getElementById('pwNew').value='';}
+};
+document.getElementById('pwNew').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('pwSave').click();});
 
 sb.auth.onAuthStateChange((ev,session)=>{
   if(ev==='PASSWORD_RECOVERY'){RECOVERY=true;signinForm.classList.add('hidden');setpassForm.classList.remove('hidden');document.getElementById('newPass').focus();return;}
