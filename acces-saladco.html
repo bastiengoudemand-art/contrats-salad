@@ -80,6 +80,21 @@ select.acc[data-role="Consultant"]{border-color:#9cc6e8;background:#eef6fc}
 .denied{max-width:440px;margin:80px auto;text-align:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:34px;box-shadow:var(--shadow)}
 .denied h2{font-size:20px;margin-bottom:8px}
 .denied p{color:var(--ink-soft);font-size:14px;margin-bottom:18px}
+/* Restaurants (Passeport) */
+.resto-chip{margin-top:6px;display:inline-flex;align-items:center;gap:4px;max-width:130px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12px;color:var(--ink-soft);cursor:pointer;line-height:1.1}
+.resto-chip:hover{border-color:var(--green);background:var(--green-l)}
+.resto-chip.set{border-color:var(--green);background:var(--green-l);color:var(--green-d);font-weight:600}
+.resto-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.resto-sum{margin-top:6px;font-size:11.5px;color:var(--muted)}
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(20,30,10,.45);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px}
+.modal-box{background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:460px;max-height:85vh;overflow:auto;padding:24px}
+.modal-box h3{font-size:17px;margin-bottom:6px}
+.mhint{font-size:13px;color:var(--ink-soft);margin-bottom:14px}
+.rchk-grid{display:flex;flex-wrap:wrap;gap:8px}
+.rchk{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;cursor:pointer;background:#fff}
+.rchk:hover{background:var(--bg)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
 </style>
 </head>
 <body>
@@ -148,6 +163,8 @@ select.acc[data-role="Consultant"]{border-color:#9cc6e8;background:#eef6fc}
   </div>
 </div>
 
+<div id="overlay" class="overlay hidden"><div id="modal" class="modal-box"></div></div>
+
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -162,6 +179,11 @@ let APPS=[];               // page_acl rows
 let USERS=[];              // list of emails (rows)
 let GRANTS={};             // email -> { onglet_id -> role }
 let ALLOWED=new Set();     // allowed_users emails (lowercase)
+let PP={};                 // email(lower) -> { id, role } depuis pp_profiles
+let PP_REST=[];            // restaurants du Passeport [{id,name}]
+let PP_ASSIGN={};          // profile_id -> [restaurant_id]
+let PP_ONGLET_ID=null;     // id de l'onglet "Passeport" dans page_acl
+let ME_PP_ADMIN=false;     // l'utilisateur courant est-il admin du Passeport ?
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -195,14 +217,23 @@ async function afterLogin(){
 }
 
 async function loadAll(){
-  const [appsRes,grantsRes,allowRes]=await Promise.all([
+  const [appsRes,grantsRes,allowRes,ppProfRes,ppRestRes,ppAssignRes]=await Promise.all([
     sb.from('page_acl').select('id,onglet,ordre,icone').order('ordre'),
     sb.from('onglet_access').select('email,onglet_id,role'),
-    sb.from('allowed_users').select('email')
+    sb.from('allowed_users').select('email'),
+    sb.from('pp_profiles').select('id,email,role'),
+    sb.from('pp_restaurants').select('id,name').order('name'),
+    sb.from('pp_profile_restaurants').select('profile_id,restaurant_id')
   ]);
   if(appsRes.error){ toast('Erreur de chargement','err'); return; }
   APPS=appsRes.data||[];
   ALLOWED=new Set((allowRes.data||[]).map(a=>(a.email||'').toLowerCase()));
+  // Données Passeport (restrictions par restaurant)
+  PP_REST=ppRestRes.data||[];
+  PP={}; (ppProfRes.data||[]).forEach(p=>{ if(p.email) PP[p.email.toLowerCase()]={id:p.id,role:p.role}; });
+  PP_ASSIGN={}; (ppAssignRes.data||[]).forEach(a=>{ (PP_ASSIGN[a.profile_id]=PP_ASSIGN[a.profile_id]||[]).push(a.restaurant_id); });
+  PP_ONGLET_ID=(APPS.find(a=>(a.onglet||'').trim().toLowerCase()==='passeport')||{}).id||null;
+  ME_PP_ADMIN=!!(PP[ME.email]&&PP[ME.email].role==='admin');
   GRANTS={};
   const emailSet=new Set();
   (grantsRes.data||[]).forEach(g=>{
@@ -231,7 +262,18 @@ function render(){
       const cur=(GRANTS[email]&&GRANTS[email][a.id])||'';
       let opts=`<option value="">—</option>`;
       ROLES.forEach(r=>{ opts+=`<option value="${r}" ${cur===r?'selected':''}>${r}</option>`; });
-      b+=`<td class="appcell"><select class="acc" data-role="${esc(cur)}" onchange="setAccess('${esc(email)}',${a.id},this)">${opts}</select></td>`;
+      let extra='';
+      if(a.id===PP_ONGLET_ID && ME_PP_ADMIN){
+        const pp=PP[email];
+        if(pp && pp.role==='admin'){ extra=`<div class="resto-sum">🏠 Tous</div>`; }
+        else if(pp){
+          const asg=PP_ASSIGN[pp.id]||[];
+          const names=asg.map(rid=>ppRestName(rid)).filter(Boolean);
+          const sum=names.length?(names.length===1?esc(names[0]):esc(names[0])+' +'+(names.length-1)):'Tous';
+          extra=`<button class="resto-chip ${names.length?'set':''}" title="Restaurants autorisés" onclick="managePpResto('${esc(email)}')">🏠 <span>${sum}</span></button>`;
+        }
+      }
+      b+=`<td class="appcell"><select class="acc" data-role="${esc(cur)}" onchange="setAccess('${esc(email)}',${a.id},this)">${opts}</select>${extra}</td>`;
     });
     b+=`<td><button class="rm-btn" title="Retirer cet utilisateur" onclick="removeUser('${esc(email)}')">🗑</button></td></tr>`;
   });
@@ -274,6 +316,29 @@ async function removeUser(email){
   USERS=USERS.filter(u=>u!==email);
   render();
   toast('Accès retirés pour '+email,'gold');
+}
+
+// ---- Restaurants Passeport (restriction des directeurs) ----
+function ppRestName(rid){ const r=PP_REST.find(x=>String(x.id)===String(rid)); return r?r.name:null; }
+function openModal(html){ $('modal').innerHTML=html; $('overlay').classList.remove('hidden'); }
+function closeModal(){ $('overlay').classList.add('hidden'); }
+async function managePpResto(email){
+  const pp=PP[email]; if(!pp) return;
+  const {data,error}=await sb.from('pp_profile_restaurants').select('restaurant_id').eq('profile_id',pp.id);
+  if(error){ toast('⚠ '+error.message,'err'); return; }
+  const sel=(data||[]).map(x=>String(x.restaurant_id));
+  const boxes=PP_REST.map(r=>`<label class="rchk"><input type="checkbox" class="pp-cb" value="${r.id}" ${sel.includes(String(r.id))?'checked':''}> ${esc(r.name)}</label>`).join('')||'<span style="color:var(--muted);font-size:13px">Aucun restaurant.</span>';
+  openModal(`<h3>🏠 Restaurants — ${esc(email.split('@')[0])}</h3><p class="mhint">Coche les restaurants que ce directeur peut voir dans le Passeport. <b>Aucune case cochée = accès à tous les restaurants.</b></p><div class="rchk-grid" id="ppBoxes">${boxes}</div><div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn" onclick="savePpResto('${esc(email)}')">Enregistrer</button></div>`);
+}
+async function savePpResto(email){
+  const pp=PP[email]; if(!pp) return;
+  const ids=[...document.querySelectorAll('#ppBoxes .pp-cb:checked')].map(c=>c.value);
+  const del=await sb.from('pp_profile_restaurants').delete().eq('profile_id',pp.id);
+  if(del.error){ toast('⚠ '+del.error.message,'err'); return; }
+  if(ids.length){ const ins=await sb.from('pp_profile_restaurants').insert(ids.map(rid=>({profile_id:pp.id,restaurant_id:rid}))); if(ins.error){ toast('⚠ '+ins.error.message,'err'); return; } }
+  PP_ASSIGN[pp.id]=ids;
+  closeModal(); render();
+  toast('✅ Restaurants mis à jour','gold');
 }
 
 // Entrée clavier
