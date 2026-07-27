@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Passeport Collaborateur · Salad&Co</title>
+<style>
+  :root{
+    --green:#6cbe2e;--green-d:#4f9a1c;--green-l:#eaf7dd;--ink:#1b1d1a;--ink-soft:#4a4f47;
+    --muted:#8a9184;--paper:#fff;--bg:#f4f6f0;--kraft:#c9a878;--line:#e5e9de;--gold:#f2b21e;
+    --shadow:0 6px 24px rgba(30,50,15,.08);--shadow-lg:0 18px 50px rgba(30,50,15,.16);--r:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  input,select,textarea{font-family:inherit}
+  header.topbar{position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;display:flex;align-items:center;gap:14px;padding:12px 22px;box-shadow:0 2px 14px rgba(0,0,0,.18)}
+  .brand{display:flex;align-items:center;gap:11px;cursor:pointer}
+  .brand .amp{font-weight:900;font-size:30px;color:var(--green);line-height:1;transform:skewX(-6deg)}
+  .brand .btxt{display:flex;flex-direction:column;line-height:1.05}
+  .brand .btxt b{font-size:16px;letter-spacing:.3px}
+  .brand .btxt span{font-size:10px;color:var(--green);letter-spacing:2px;text-transform:uppercase}
+  .crumbs{display:flex;align-items:center;gap:8px;font-size:14px;color:#cfd6c8;flex-wrap:wrap}
+  .crumbs a{color:#cfd6c8;cursor:pointer;text-decoration:none}
+  .crumbs a:hover{color:#fff}
+  .crumbs .sep{opacity:.5}
+  .crumbs .cur{color:#fff;font-weight:600}
+  .topbar .spacer{flex:1}
+  .topbar-actions{display:flex;gap:8px;align-items:center}
+  .icon-btn{color:#cfd6c8;background:rgba(255,255,255,.08);padding:8px 12px;border-radius:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+  .icon-btn:hover{background:rgba(255,255,255,.18);color:#fff}
+  .user-chip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);padding:5px 6px 5px 12px;border-radius:30px}
+  .user-chip .un{font-size:13px;color:#fff;font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .role-pill{font-size:10px;font-weight:800;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px}
+  .role-pill.admin{background:var(--green);color:#fff}
+  .role-pill.invite{background:var(--gold);color:#3a2c05}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 22px 80px}
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+  .page-head h1{font-size:26px;margin:0 0 4px}
+  .page-head p{margin:0;color:var(--muted);font-size:14px}
+  .btn{background:var(--green);color:#fff;font-weight:700;font-size:14px;padding:11px 18px;border-radius:12px;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(108,190,46,.35);transition:.15s}
+  .btn:hover{background:var(--green-d);transform:translateY(-1px)}
+  .btn.ghost{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+  .btn.ghost:hover{background:#f6f8f2}
+  .btn.small{padding:8px 13px;font-size:13px}
+  .btn.danger{background:#e5533c;box-shadow:0 4px 14px rgba(229,83,60,.3)}
+  .btn.danger:hover{background:#c9401f}
+  .btn[disabled]{opacity:.5;cursor:not-allowed;transform:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+  .card{background:var(--paper);border-radius:var(--r);box-shadow:var(--shadow);padding:20px;transition:.18s;border:1px solid var(--line);position:relative;overflow:hidden}
+  .card.click{cursor:pointer}
+  .card.click:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+  .card .card-top-strip{position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--green),#a5db63)}
+  .resto-icon{width:46px;height:46px;border-radius:12px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px}
+  .card h3{margin:0 0 4px;font-size:18px}
+  .card .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .stat-row{display:flex;gap:16px;margin-top:12px}
+  .stat{flex:1}
+  .stat b{font-size:20px;display:block}
+  .stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .add-card{border:2px dashed #cdd7c0;background:transparent;border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:150px;color:var(--green-d);font-weight:700;transition:.15s;cursor:pointer}
+  .add-card:hover{border-color:var(--green);background:var(--green-l)}
+  .add-card .plus{font-size:34px;line-height:1}
+  .collab-card{display:flex;flex-direction:column;gap:0}
+  .collab-head{display:flex;gap:13px;align-items:center;margin-bottom:14px}
+  .avatar{width:52px;height:52px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:19px;background:linear-gradient(135deg,var(--green),var(--green-d))}
+  .collab-head .who{min-width:0}
+  .collab-head .who b{font-size:16px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .collab-head .who span{font-size:12px;color:var(--muted)}
+  .lvl-pill{background:var(--ink);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;margin-top:3px}
+  .progress-wrap{margin:6px 0 4px}
+  .progress-line{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;color:var(--ink-soft)}
+  .progress-line b{color:var(--green-d)}
+  .bar{height:9px;background:#eef1e9;border-radius:20px;overflow:hidden}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#9ad358);border-radius:20px;transition:width .5s ease}
+  .mini-badges{display:flex;gap:5px;margin-top:12px;flex-wrap:wrap}
+  .mini-badge{width:26px;height:26px;border-radius:8px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .mini-badge.locked{background:#f0f1ee;filter:grayscale(1);opacity:.5}
+  .collab-actions{display:flex;gap:7px;margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+  .collab-actions .btn{flex:1;justify-content:center}
+  .tiny-btn{background:#f2f4ef;color:var(--ink-soft);border-radius:9px;padding:9px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:5px;transition:.15s}
+  .tiny-btn:hover{background:#e7ebe0}
+  .tiny-btn.danger:hover{background:#fbe4de;color:#c9401f}
+  .archived-tag{position:absolute;top:14px;right:14px;background:#ececea;color:#8a8a86;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.5px}
+  .subtabs{display:flex;gap:6px;background:#fff;padding:6px;border-radius:14px;box-shadow:var(--shadow);margin-bottom:22px;overflow-x:auto}
+  .subtab{padding:9px 15px;border-radius:10px;font-size:13.5px;font-weight:600;color:var(--ink-soft);white-space:nowrap;transition:.15s}
+  .subtab:hover{background:#f2f4ef}
+  .subtab.active{background:var(--green);color:#fff;box-shadow:0 3px 10px rgba(108,190,46,.35)}
+  .subtab .cnt{font-size:11px;opacity:.85;margin-left:3px}
+  .pp-hero{background:linear-gradient(135deg,#232622,#161814);color:#fff;border-radius:22px;padding:26px 28px;margin-bottom:22px;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)}
+  .pp-hero::after{content:"&";position:absolute;right:-10px;bottom:-40px;font-size:210px;font-weight:900;color:rgba(108,190,46,.14);transform:skewX(-6deg);line-height:1}
+  .pp-hero-top{display:flex;gap:18px;align-items:center;position:relative;z-index:2;flex-wrap:wrap}
+  .pp-avatar{width:74px;height:74px;border-radius:20px;background:linear-gradient(135deg,var(--green),var(--green-d));display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;flex-shrink:0}
+  .pp-id h2{margin:0;font-size:24px}
+  .pp-id .meta{color:#b9c1b0;font-size:13px;margin-top:3px}
+  .pp-id .meta b{color:#fff}
+  .pp-hero .lvlbox{margin-left:auto;text-align:right;position:relative;z-index:2}
+  .pp-hero .lvlbox .lvl-name{font-size:13px;color:var(--green);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+  .pp-hero .lvlbox .lvl-num{font-size:34px;font-weight:900;line-height:1}
+  .pp-hero .lvlbox .xp{font-size:12px;color:#b9c1b0}
+  .pp-xpbar{margin-top:20px;position:relative;z-index:2}
+  .pp-xpbar .lab{display:flex;justify-content:space-between;font-size:12px;color:#cdd4c6;margin-bottom:6px}
+  .pp-xpbar .bar{height:12px;background:rgba(255,255,255,.12)}
+  .pp-xpbar .bar>i{background:linear-gradient(90deg,var(--green),var(--gold))}
+  .dash{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start}
+  @media(max-width:820px){.dash{grid-template-columns:1fr}}
+  .panel{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);padding:20px;border:1px solid var(--line)}
+  .panel h3{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px}
+  .panel .phint{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+  .module-prog{display:flex;flex-direction:column;gap:13px}
+  .mp-row .mp-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+  .mp-row .mp-top .nm{font-weight:600}
+  .mp-row .mp-top .vl{color:var(--muted);font-size:12px}
+  .mp-row.done .mp-top .vl{color:var(--green-d);font-weight:700}
+  .badges-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:12px}
+  .badge{text-align:center;padding:12px 6px;border-radius:14px;background:var(--green-l);transition:.15s;position:relative}
+  .badge.locked{background:#f2f3f0;filter:grayscale(1);opacity:.55}
+  .badge .emo{font-size:30px;line-height:1}
+  .badge .bn{font-size:10.5px;font-weight:700;margin-top:6px;color:var(--ink-soft);line-height:1.2}
+  .challenges{display:flex;flex-direction:column;gap:10px}
+  .chal{display:flex;gap:11px;align-items:center;padding:11px 13px;border-radius:12px;background:#f7f9f4;border:1px solid var(--line)}
+  .chal.done{background:var(--green-l);border-color:#cfe9b4}
+  .chal .ck{width:24px;height:24px;border-radius:50%;border:2px solid #cdd7c0;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}
+  .chal.done .ck{background:var(--green);border-color:var(--green)}
+  .chal .ctxt{font-size:13px}
+  .chal .ctxt b{display:block}
+  .chal .ctxt span{color:var(--muted);font-size:12px}
+  .chal .reward{margin-left:auto;font-size:11px;font-weight:700;color:var(--gold);white-space:nowrap}
+  .timeline{position:relative;padding-left:26px}
+  .timeline::before{content:"";position:absolute;left:8px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl-item{position:relative;padding:0 0 18px}
+  .tl-item:last-child{padding-bottom:0}
+  .tl-dot{position:absolute;left:-26px;top:1px;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:9px}
+  .tl-item.milestone .tl-dot{border-color:var(--gold);background:var(--gold);color:#fff}
+  .tl-item .tl-date{font-size:11px;color:var(--muted);font-weight:600}
+  .tl-item .tl-txt{font-size:13.5px;margin-top:1px}
+  .module-block{background:#fff;border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);margin-bottom:16px;overflow:hidden}
+  .mb-head{display:flex;align-items:center;gap:13px;padding:16px 20px;cursor:pointer;transition:.15s}
+  .mb-head:hover{background:#f8faf5}
+  .mb-emo{width:42px;height:42px;border-radius:12px;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+  .mb-head .mb-title{flex:1;min-width:0}
+  .mb-head .mb-title b{font-size:15.5px}
+  .mb-head .mb-title .mb-sub{font-size:12px;color:var(--muted)}
+  .mb-prog{display:flex;align-items:center;gap:10px;flex-shrink:0}
+  .mb-prog .ring{font-size:12px;font-weight:800;color:var(--green-d);min-width:38px;text-align:right}
+  .mb-chevron{color:var(--muted);transition:.2s;font-size:13px}
+  .module-block.open .mb-chevron{transform:rotate(180deg)}
+  .mb-badge-done{background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
+  .mb-body{display:none;padding:4px 20px 16px;border-top:1px solid var(--line)}
+  .module-block.open .mb-body{display:block}
+  .comp{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px dashed var(--line)}
+  .comp:last-child{border-bottom:none}
+  .comp .cbox{width:24px;height:24px;border-radius:7px;border:2px solid #cdd7c0;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;transition:.15s;cursor:pointer;background:#fff}
+  .comp.on .cbox{background:var(--green);border-color:var(--green)}
+  .comp .clabel{flex:1;font-size:13.5px;line-height:1.4;display:flex;flex-wrap:wrap;align-items:center;gap:2px}
+  .comp.on .clabel{color:var(--muted);text-decoration:line-through;text-decoration-color:#cdd7c0}
+  .comp .chelp{color:var(--muted);font-style:italic;font-size:12px}
+  .comp .cdate{font-size:11px;color:var(--green-d);white-space:nowrap;margin-top:3px;flex-basis:100%}
+  .cbox.ro{cursor:not-allowed;opacity:.85;border-style:dashed}
+  .comp.on .cbox.ro{opacity:1}
+  .eval-note{background:#f7f9f4;border-radius:12px;padding:13px 15px;margin-top:14px;font-size:12.5px;color:var(--ink-soft);display:flex;gap:10px;align-items:flex-start}
+  .eval-note textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px;font-size:13px;resize:vertical;min-height:52px;margin-top:6px}
+  .cattag{display:inline-block;color:#fff;font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px;margin-right:6px;vertical-align:middle}
+  .stage-cur{background:var(--gold);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
+  .ead-block.acq .mb-emo{box-shadow:0 0 0 2px var(--green) inset}
+  .ead-lock{display:flex;align-items:center;gap:13px;background:#fbf6e8;border:1px solid #f0e2b8;border-radius:14px;padding:14px 18px;margin-bottom:18px;font-size:13.5px;color:var(--ink-soft)}
+  .ead-lock .lk{font-size:22px}
+  .ead-lock b{color:var(--ink)}
+  .ead-lock .btn{margin-left:auto;flex-shrink:0}
+  .ead-lock.openw{background:var(--green-l);border-color:#cfe9b4}
+  .sess-row{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--line)}
+  .sess-row:last-child{border-bottom:none}
+  .sess-main{flex:1;min-width:0}
+  .sess-top{font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .sess-meta{font-size:12px;color:var(--muted);margin-top:3px}
+  .sess-note{width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px;margin-top:8px}
+  .sess-chip{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .sess-chip.open{background:var(--green);color:#fff}
+  .sess-chip.closed{background:#e7ebe0;color:var(--ink-soft)}
+  .sess-chip.planned{background:#fbeecb;color:#a97b12}
+  .sess-acts{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:150px}
+  .signrow{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap}
+  .signbox{flex:1;min-width:200px;border:1px solid var(--line);border-radius:12px;padding:12px;background:#fafcf7}
+  .signbox .sl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:8px}
+  .signbox .simg{width:100%;height:90px;border-radius:8px;background:#fff;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .signbox .simg img{max-width:100%;max-height:100%}
+  .signbox .smeta{font-size:11.5px;color:var(--ink-soft);margin-top:7px}
+  .signbox .smeta b{color:var(--ink)}
+  .signpad-wrap{border:2px dashed var(--line);border-radius:12px;background:#fff;touch-action:none}
+  .signpad-wrap canvas{display:block;width:100%;height:180px;border-radius:12px;cursor:crosshair}
+  .dash-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+  .tile{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:18px 20px;border:1px solid var(--line);position:relative;overflow:hidden}
+  .tile .tv{font-size:32px;font-weight:900;line-height:1;color:var(--ink)}
+  .tile .tl{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+  .tile .te{position:absolute;right:12px;top:12px;font-size:22px;opacity:.5}
+  .sbar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:#eef1e9}
+  .sbar span{display:block;height:100%}
+  .sbar.empty{align-items:center;justify-content:center;color:var(--muted);font-size:11px;background:#f4f6f0;font-weight:600}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px}
+  .legend .li{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft)}
+  .legend .sw{width:13px;height:13px;border-radius:4px;flex-shrink:0}
+  .rank-row{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+  .rank-row .rn{width:170px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+  .rank-row .rn:hover{color:var(--green-d)}
+  .rank-row .rbar{flex:1;height:24px;background:#eef1e9;border-radius:8px;overflow:hidden;position:relative;min-width:80px}
+  .rank-row .rbar>i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#9ad358);border-radius:8px;transition:width .5s}
+  .rank-row .rbar>.rv{position:absolute;right:9px;top:0;line-height:24px;font-size:12px;font-weight:800;color:var(--ink)}
+  .rank-row .rc{width:74px;text-align:right;font-size:12px;color:var(--muted)}
+  .dtable{width:100%;border-collapse:collapse;font-size:13px}
+  .dtable th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:9px 10px;border-bottom:2px solid var(--line);white-space:nowrap}
+  .dtable td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .dtable tr:last-child td{border-bottom:none}
+  .dtable tbody tr:hover td{background:#f8faf5}
+  .dtable .rname{font-weight:700;cursor:pointer;color:var(--ink)}
+  .dtable .rname:hover{color:var(--green-d)}
+  .dt-empty{color:var(--muted);font-style:italic;font-size:12px}
+  .journal{display:flex;flex-direction:column;gap:0}
+  .jrow{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .jrow:last-child{border-bottom:none}
+  .jrow .jt{color:var(--muted);white-space:nowrap;font-size:11.5px;min-width:112px}
+  .jrow .jd b{color:var(--ink)}
+  .jrow .ja{color:var(--green-d);font-weight:600}
+  .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty .emo{font-size:52px;margin-bottom:12px}
+  .empty h3{color:var(--ink);margin:0 0 6px}
+  .overlay{position:fixed;inset:0;background:rgba(20,25,15,.55);backdrop-filter:blur(3px);z-index:60;display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:20px;box-shadow:var(--shadow-lg);width:100%;max-width:460px;padding:26px;animation:up .25s ease;max-height:92vh;overflow:auto}
+  @keyframes up{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal h3{margin:0 0 4px;font-size:20px}
+  .modal .mhint{color:var(--muted);font-size:13px;margin:0 0 18px}
+  .field{margin-bottom:14px}
+  .field label{font-size:12.5px;font-weight:700;display:block;margin-bottom:6px;color:var(--ink-soft)}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:14px}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--green)}
+  .modal-actions{display:flex;gap:10px;margin-top:22px}
+  .modal-actions .btn{flex:1;justify-content:center}
+  .row2{display:flex;gap:12px}
+  .row2>.field{flex:1}
+  .mono{background:#f2f4ef;border-radius:8px;padding:9px 11px;font-size:12.5px;word-break:break-all;font-family:ui-monospace,monospace}
+  @keyframes up{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .toast-zone{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none}
+  .toast{background:var(--ink);color:#fff;padding:13px 20px;border-radius:14px;font-size:14px;font-weight:600;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:10px;animation:tin .3s ease;max-width:90vw}
+  .toast.gold{background:linear-gradient(135deg,#2a2c26,#1a1c17);border:1px solid var(--gold)}
+  .toast.err{background:#c9401f}
+  @keyframes tin{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+  #authView{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#1f2a17,#0f140c)}
+  .auth-card{background:#fff;border-radius:22px;box-shadow:var(--shadow-lg);width:100%;max-width:400px;padding:32px 30px}
+  .auth-card .amp{font-weight:900;font-size:46px;color:var(--green);transform:skewX(-6deg);line-height:1}
+  .auth-card h1{font-size:22px;margin:14px 0 2px}
+  .auth-card p.sub{color:var(--muted);font-size:13px;margin:0 0 22px}
+  .auth-err{background:#fbe4de;color:#c9401f;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:14px;display:none}
+  .auth-err.show{display:block}
+  .loader{display:flex;align-items:center;justify-content:center;min-height:100vh;color:var(--muted);font-size:14px;gap:10px}
+  .spin{width:18px;height:18px;border:3px solid #d8ded0;border-top-color:var(--green);border-radius:50%;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .ref-steps{font-size:13px;color:var(--ink-soft);line-height:1.6}
+  .ref-steps b{color:var(--ink)}
+  .ref-drop{border:2px dashed #cdd7c0;border-radius:12px;padding:18px;text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+  @media(max-width:560px){
+    .wrap{padding:20px 15px 70px}
+    .pp-hero .lvlbox{margin-left:0;text-align:left;width:100%;margin-top:10px}
+    .page-head h1{font-size:22px}
+    .rank-row .rn{width:110px}
+    .dtable .hide-sm{display:none}
+    .user-chip .un{max-width:80px}
+  }
+</style>
+</head>
+<body>
+<div id="boot" class="loader"><div class="spin"></div> Chargement…</div>
+<div id="authView" style="display:none">
+  <div class="auth-card">
+    <div class="amp">&amp;</div>
+    <h1 id="authTitle">Passeport Collaborateur</h1>
+    <p class="sub" id="authSub">Salad&Co — accès sécurisé</p>
+    <div class="auth-err" id="authErr"></div>
+    <div id="authFields"></div>
+  </div>
+</div>
+<div id="mainApp" style="display:none">
+  <header class="topbar">
+    <div class="brand" onclick="go('home')"><span class="amp">&amp;</span><div class="btxt"><b>Passeport Collaborateur</b><span>Salad&Co</span></div></div>
+    <div class="crumbs" id="crumbs"></div>
+    <div class="spacer"></div>
+    <div class="topbar-actions" id="topActions"></div>
+  </header>
+  <div class="wrap" id="app"></div>
+</div>
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal"></div></div>
+<div class="toast-zone" id="toasts"></div>
+<input type="file" id="refFile" accept=".xlsx" style="display:none" onchange="importRef(event)">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+/* ===================== CONFIG SUPABASE ===================== */
+const SUPA_URL='https://wplolvjziqqvvcydvfxs.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbG9sdmp6aXFxdnZjeWR2ZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTAwNzYsImV4cCI6MjEwMDEyNjA3Nn0.DD2sqXCHcVyETPxb78QiBzH21r73y2CAY5LdXCH5k9w';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+/* ===================== RÉFÉRENTIEL PAR DÉFAUT (données brutes) ===================== */
+const RAW_POSTES=[
+ {id:'atelier_fraicheur',nom:'Atelier Fraîcheur',emo:'🥗',sub:'BOOK AF · AF1 + AF2',comps:[['J’ai la bonne tenue en Atelier fraîcheur','+ tablier plastique lors de la fabrication'],['Je connais les règles qualité de l’atelier fraîcheur','Bonnes pratiques, DLC, FIFO, températures…'],['Je connais la procédure de décongélation des produits',''],['Tous les gastros sont correctement étiquetés','Traçabilité'],['Je respecte les différentes découpes lors de la production',''],['Je respecte les fiches recettes',''],['J’organise mon espace de travail de façon optimale','Rangement et propreté du poste'],['Je respecte les quantités à produire','+ Inventaire fin de service'],['Je sais utiliser le matériel en toute sécurité','Robot coupe, lame, cutter, ouvre-boîte'],['Je sais lire un plan d’implantation buffet','Respect du plan, étiquettes, allergènes'],['Mon buffet est propre et approvisionné pendant le service','Pas de rupture'],['Je connais les produits, je sais conseiller les clients',''],['J’accueille les clients, je souris et je suis disponible',''],['Je respecte le plan de nettoyage','Produits lessiviels, TACT, fréquence, entretien'],['Je travaille en équipe et communique avec mes collègues','']]},
+ {id:'plancha',nom:'Production Plancha',emo:'🍳',sub:'BOOK PLANCHA · Plancha 1 + 2',comps:[['J’ai la bonne tenue en plancha',''],['Je connais les règles qualité de la plancha','Bonnes pratiques, DLC, FIFO, températures…'],['Je connais la procédure de décongélation des produits',''],['Toute la production est correctement étiquetée','Traçabilité'],['Toutes les cuissons sont maîtrisées','Soupes, cuisson des légumes et des féculents'],['Je respecte les fiches recettes',''],['J’organise mon espace de travail de façon optimale','Rangement et propreté du poste'],['Je respecte les quantités à produire','+ Inventaire fin de service'],['Je sais utiliser le matériel en toute sécurité','Mixer, plancha, réchaud, ouvre-boîte'],['Je sais utiliser la mini borne et connais les règles de typage',''],['Je connais les produits, je sais conseiller les clients',''],['J’accueille les clients, je souris et je suis disponible',''],['Mon poste est propre et approvisionné pendant le service','Disponibilité des sauces et produits'],['Je respecte le plan de nettoyage','+ nettoyage de la plaque plancha'],['Je travaille en équipe et communique avec mes collègues','']]},
+ {id:'dessert',nom:'Dessert',emo:'🍰',sub:'BOOK DESSERT',comps:[['J’ai la bonne tenue au dessert','+ tablier plastique lors de la fabrication'],['Je connais les règles qualité du dessert','Bonnes pratiques, DLC, FIFO, températures…'],['Je connais la procédure de décongélation des produits',''],['Je respecte les recettes et découpes','Glace, fruits, moelleux…'],['Je sais lire un plan d’implantation buffet','Respect du plan, étiquettes, allergènes'],['J’organise mon espace de travail de façon optimale','Rangement et propreté du poste'],['Mon buffet est propre et approvisionné pendant le service','Pas de rupture'],['J’anticipe ! Pas de rupture de vaisselle pendant le service','Verre fontaine à eau et dessert'],['J’accueille les clients, je souris et je suis disponible',''],['Je respecte les quantités à produire','+ Inventaire fin de service'],['Je respecte le plan de nettoyage','Produits lessiviels, TACT, fréquence, entretien'],['Je travaille en équipe et communique avec mes collègues','']]},
+ {id:'bar',nom:'Bar à jus',emo:'🥤',sub:'BOOK BAR',comps:[['J’ai la bonne tenue au bar','+ tablier plastique lors de la découpe de fruits'],['Je connais les règles qualité du bar','Bonnes pratiques, DLC, FIFO, températures…'],['Je respecte les découpes et recettes jus / cocktails',''],['J’organise mon espace de travail de façon optimale','Rangement et propreté du poste'],['Je sais mettre en avant un produit et le présenter','Facing'],['Je sais utiliser la mini borne et connais les règles de typage',''],['J’anticipe ! Pas de rupture de vaisselle pendant le service','Verres, tasses à café…'],['J’accueille les clients, je souris et je suis disponible',''],['Je connais les produits, je sais conseiller les clients',''],['Je respecte le plan de nettoyage','Produits lessiviels, TACT, fréquence, entretien'],['Je travaille en équipe et communique avec mes collègues','']]},
+ {id:'caisse',nom:'Accueil / Caisse',emo:'🧾',sub:'BOOK CAISSE · Module e-learning Cashpad',comps:[['J’ai la bonne tenue en caisse',''],['J’organise mon espace de travail de façon optimale','Rangement et propreté du poste'],['Je sais présenter le concept et les formules',''],['Je sais mettre en avant un produit selon l’offre marketing ou le challenge',''],['J’accueille et je prends en charge rapidement les clients',''],['Je connais les règles de réservation et de placement',''],['Je connais les avantages fidélité',''],['Je sais encaisser un client','Encaissement, offre fidélité…'],['Je sais compter une caisse','Procédure + fond de caisse à jour en fin de service'],['Je connais les règles de sécurité liées aux encaissements et comptages',''],['Je travaille en équipe et communique avec mes collègues',''],['J’ai validé le module Cashpad sur E-Learning','85% de réussite minimum']]},
+ {id:'salle',nom:'Salle',emo:'🍽️',sub:'BOOK SALLE',comps:[['J’ai la bonne tenue en salle',''],['J’organise mon espace de travail de façon optimale','Rangement de la console et propreté du poste'],['Je respecte le plan de nettoyage','Produits, TACT, fréquence, entretien du matériel'],['Je sais dresser une table','Couverts, serviette, sel, poivre, rond libre/occupé'],['J’accueille les clients, je souris et je suis disponible',''],['Je débarrasse la table au fur et à mesure du repas','De façon optimale'],['J’anticipe et sécurise les risques pour le client','Verre cassé, sol mouillé, ingrédients au sol…'],['Je vérifie les WC clients pendant le service et je corrige si nécessaire',''],['J’accompagne et aide le client dans son déplacement','Orientation, explications, conseils'],['Je fais de la vente à table','Produits additionnels : boissons chaudes…'],['Je travaille en équipe et communique avec mes collègues','']]},
+ {id:'reception',nom:'Réception',emo:'📦',sub:'BOOK RÉCEPTION',comps:[['J’ai la bonne tenue en réception',''],['J’organise mon espace de travail de façon optimale','Rangement et propreté du poste'],['Je respecte les procédures qualité','Température, chaîne du froid, DLC…'],['Je respecte les règles de manutention',''],['J’accueille les livreurs et vérifie la qualité des produits livrés',''],['Je lave (fruits et légumes), range et étiquette tous les produits',''],['Je sais effectuer un facing en légumerie','+ respect des règles FIFO'],['Je sais utiliser la balance et intégrer les réceptions',''],['Je respecte le plan de nettoyage','Produits, TACT, fréquence, entretien du matériel'],['Je travaille en équipe et communique avec mes collègues','']]},
+ {id:'laverie',nom:'Laverie',emo:'🍴',sub:'BOOK LAVERIE',comps:[['J’ai la bonne tenue en laverie',''],['J’organise mon espace de travail de façon optimale','Rangement et propreté du poste'],['Je respecte les règles de sécurité','EPI'],['Je suis le rythme d’arrivée de la vaisselle sale',''],['Je rends une vaisselle propre et sans résidus',''],['Je respecte le rangement propre / sale et je range de façon optimale',''],['Je sais utiliser les différents paniers à vaisselle qui vont en machine',''],['Je sais démonter et remonter la machine',''],['Je connais les produits de trempage pour la vaisselle',''],['Je respecte le plan de nettoyage','Produits, TACT, fréquence, entretien du matériel'],['Je travaille en équipe et communique avec mes collègues','']]}
+];
+const RAW_MATERIEL=[{id:'m_glace',nom:'Machine à glace',emo:'🍦'},{id:'m_glace_net',nom:'Nettoyage machine à glace',emo:'🧽'},{id:'m_perco',nom:'Machine à café (Perco)',emo:'☕'},{id:'m_blender',nom:'Blender',emo:'🥤'},{id:'m_lavelegume',nom:'Lave-légumes',emo:'🥬'},{id:'m_epluche',nom:'Épluche-légumes',emo:'🥔'},{id:'m_robot',nom:'Robot coupe',emo:'🔪'},{id:'m_cutter',nom:'Cutter',emo:'🌀'},{id:'m_mixer',nom:'Mixer plongeant (plancha)',emo:'🫗'},{id:'m_autolaveuse',nom:'Autolaveuse',emo:'🧹'},{id:'m_lavevaisselle',nom:'Lave-vaisselle',emo:'🍽️'},{id:'m_cellule',nom:'Cellule de refroidissement',emo:'❄️'},{id:'m_four',nom:'Four cuisson',emo:'🔥'},{id:'m_sofraspeed',nom:'Four Sofraspeed',emo:'🍕'},{id:'m_riz',nom:'Cuiseur à riz',emo:'🍚'}];
+const RAW_MAT_COMPS=['Je respecte les règles de sécurité et d’hygiène de la machine','Je connais les différentes fonctions de la machine','Je sais nettoyer la machine avec le bon produit'];
+const RAW_ELEARNING=[['Bienvenue dans la tribu','Histoire de Salad&Co / Code de conduite éthique','20 min'],['Hygiène en restauration','Réglementation, contamination, bonnes pratiques, procédures qualité','60 min'],['Commerce','Culture commerce et épicerie','30 min'],['Santé & Sécurité','Manipulation d’objets tranchants, accessibilité, vigipirate, EPI…','30 min']];
+const RAW_REGLEMENTAIRE=[['Formation HACCP','Niveau 1 : 7h / Niveau 2 : 14h','🧼'],['Équipier de première intervention','Premier témoin incendie et de secours / guide-file & serre-file','🧯'],['Sauveteur Secouriste du Travail (SST)','Formation initiale 14h + recyclage 7h','⛑️']];
+const RAW_EAD_STAGES=[{emo:'🌱',name:'La graine',obj:'Comprendre la culture, apprendre les gestes de base.',sen:'Moins d’1 an d’ancienneté'},{emo:'🌿',name:'La pousse',obj:'Savoir exécuter les tâches avec accompagnement.',sen:'Entre 1 et 3 ans'},{emo:'🌲',name:'L’arbre en croissance',obj:'Optimiser ton poste et aider les autres à se sentir à l’aise.',sen:'Entre 3 et 5 ans'},{emo:'🌳',name:'La forêt',obj:'Encadrer, transmettre, organiser.',sen:'Plus de 5 ans'}];
+const RAW_EAD_COMPS=[['Polyvalence 30 % — quiz OK sur E-learning','POLY',1],['Respecte le planning (ponctualité, pas de retard / ASM)','SE',1],['Connaît et respecte le règlement intérieur','SE',1],['Contribue à la bonne ambiance et favorise l’esprit d’équipe','SE',1],['Adopte la bonne tenue pour chaque poste','CE',1],['Connaît le prix des formules','CE',1],['Maîtrise les règles d’hygiène HACCP 1','SF',1],['Manipulation des couteaux selon les règles de sécurité S&Co','SF',1],['Connaît et utilise les formules de politesse (accueil, service, départ)','SF',1],['Respecte les processus de découpes et recettes','SF',1],['Vigilant sur la propreté des toilettes pendant le service','SF',1],['Connaît et utilise les EPI sur chaque poste','SF',1],['Effectue le contrôle des produits (DLC, réserves…)','SF',1],['Polyvalence 55 % — quiz OK sur E-learning','POLY',2],['Connaît les horaires de son restaurant','CE',2],['Connaît le programme de fidélité et le propose à chaque client','CE',2],['Présent aux réunions de lancement de service et participe au tour client','CE',2],['Accepte la critique (positive/négative) amenée avec pédagogie','SE',2],['Informe son adjoint de direction des indispos en temps et en heure','SE',2],['Entretient de bonnes relations avec l’équipe','SE',2],['Adapte ses suggestions de vente au moment de vie client','SF',2],['Reconnaît la conformité des découpes fruits/légumes (disques, recettes)','SF',2],['Salue chaque client croisé, attitude conviviale tout le service','SF',2],['Ne sert que les commandes typées (plancha / AF / BAJ)','SF',2],['Connaît la gamme boissons BAJ / protéines plancha / suppléments AF','SF',2],['Polyvalence 77 % — quiz OK sur E-learning','POLY',3],['Assure l’accueil téléphonique (réservations, commandes, VAE)','SF',3],['Communique les ruptures à annoncer (plancha / AF / dessert)','SF',3],['Optimise la rapidité de production (AF / Plancha / Dessert / BAJ)','SF',3],['Remonte les anomalies aux managers','AUTRE',3],['Annonce les actions commerciales en cours','SF',3],['Connaît et applique les procédures d’encaissement et ventilation S&Co','SF',3],['Limite le temps d’attente pour le règlement (bipper plancha)','SF',3],['Sert les boissons selon les fiches techniques et recettes S&Co','SF',3],['Sait nettoyer la plancha en sécurité','SF',3],['Polyvalence 100 % — quiz OK sur E-learning','POLY',4],['Participe aux formations internes EPI / PTI','OPT',4],['Participe aux formations internes SST','OPT',4],['Maîtrise démontage / nettoyage / remontage des machines à glace','SF',4],['Sait nettoyer et détartrer la machine à café','SF',4],['Effectue la clôture des caisses (sous responsabilité manager)','SF',4],['Adapte son accueil au type de clientèle (couples, enfants, PMR, seniors…)','SF',4]];
+const RAW_SUIVI_ESSAI=['Comment te sens-tu ?','Sur quoi te sens-tu à l’aise ?','Sur quoi penses-tu avoir encore besoin d’accompagnement ?','Plan d’action pour le prochain entretien'];
+const RAW_SUIVI_EMP=['Points positifs','Axes d’amélioration','Ressenti collaborateur','Engagement collaborateur'];
+const EAD_CATS={POLY:{n:'Polyvalence',c:'#6cbe2e'},SE:{n:'Savoir-être',c:'#e8952e'},SF:{n:'Savoir-faire',c:'#2e86e8'},CE:{n:'Culture S&Co',c:'#9b5de5'},OPT:{n:'Optionnel',c:'#e85d75'},AUTRE:{n:'Transverse',c:'#8a9184'}};
+const CAT_BY_NAME={}; Object.entries(EAD_CATS).forEach(([k,v])=>CAT_BY_NAME[v.n.toLowerCase()]=k);
+
+function buildDefaultRef(){
+  return {
+    version:1,
+    postes:RAW_POSTES.map(po=>({id:po.id,nom:po.nom,emo:po.emo,sub:po.sub,comps:po.comps.map((c,i)=>({id:po.id+'_'+i,label:c[0],help:c[1]||''}))})),
+    materiel:RAW_MATERIEL.map(m=>({id:m.id,nom:m.nom,emo:m.emo,comps:RAW_MAT_COMPS.map((lab,i)=>({id:m.id+'_'+i,label:lab}))})),
+    elearning:RAW_ELEARNING.map((e,i)=>({id:'el'+i,title:e[0],desc:e[1],duree:e[2]})),
+    reglementaire:RAW_REGLEMENTAIRE.map((r,i)=>({id:'rg'+i,title:r[0],detail:r[1],emo:r[2]})),
+    eadStages:RAW_EAD_STAGES.map((s,i)=>({id:'st'+(i+1),emo:s.emo,name:s.name,obj:s.obj,sen:s.sen})),
+    eadComps:RAW_EAD_COMPS.map((c,i)=>({id:'ec'+i,label:c[0],cat:c[1],stage:c[2]})),
+    suiviEssai:RAW_SUIVI_ESSAI.map((q,i)=>({id:'se'+i,q})),
+    suiviEmp:RAW_SUIVI_EMP.map((q,i)=>({id:'sm'+i,q}))
+  };
+}
+function normalizeRef(r){ const d=buildDefaultRef(); if(!r||typeof r!=='object') return d; ['postes','materiel','elearning','reglementaire','eadStages','eadComps','suiviEssai','suiviEmp'].forEach(k=>{ if(!Array.isArray(r[k])||!r[k].length) r[k]=d[k]; }); return r; }
+
+let REF=buildDefaultRef();
+
+/* ===================== ÉTAT ===================== */
+let STORE={restaurants:[],audit:[]};
+let ME=null;
+let VIEW={name:'home',rid:null,cid:null,tab:'overview',open:null,arch:false};
+let prevStage=0;
+function isAdmin(){ return ME&&ME.role==='admin'; }
+
+/* ===================== HELPERS ===================== */
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function nowISO(){ return new Date().toISOString(); }
+function frDate(iso){ if(!iso) return ''; const d=String(iso).slice(0,10).split('-'); return d[2]+'/'+d[1]+'/'+d[0]; }
+function frDateTime(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function initials(c){ return ((c.firstName||'?')[0]+((c.lastName||'')[0]||'')||'?').toUpperCase(); }
+function monthsSince(iso){ if(!iso) return 0; const s=new Date(iso),n=new Date(); return Math.max(0,(n.getFullYear()-s.getFullYear())*12+(n.getMonth()-s.getMonth())); }
+function fmtSeniority(m){ if(m<1) return '< 1 mois'; const y=Math.floor(m/12),mm=m%12; if(y===0) return mm+' mois'; return y+' an'+(y>1?'s':'')+(mm?(' '+mm+' m'):''); }
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+function eadColor(i){ if(i<=0) return '#d8dcd0'; const total=REF.eadStages.length; const t=total<=1?0:(i-1)/(total-1); const a=[0xa5,0xd7,0x6b],b=[0x1f,0x4d,0x1c]; const c=a.map((v,k)=>Math.round(v+(b[k]-v)*t)); return 'rgb('+c.join(',')+')'; }
+
+/* progression par ID */
+function posteProg(p,pid){ return (p.postes[pid]&&p.postes[pid].comps)||{}; }
+function posteDone(p,pid){ const po=REF.postes.find(x=>x.id===pid); if(!po||!po.comps.length) return false; const pr=posteProg(p,pid); return po.comps.every(c=>pr[c.id]&&pr[c.id].done); }
+function matDone(p,mid){ const m=REF.materiel.find(x=>x.id===mid); if(!m||!m.comps.length) return false; const pr=(p.materiel[mid]&&p.materiel[mid].comps)||{}; return m.comps.every(c=>pr[c.id]&&pr[c.id].done); }
+function moduleStats(p){
+  const rows=[]; let dP=0,tP=0;
+  REF.postes.forEach(po=>{const pr=posteProg(p,po.id);dP+=po.comps.filter(c=>pr[c.id]&&pr[c.id].done).length;tP+=po.comps.length;});
+  rows.push({key:'postes',label:'Formation par poste',emo:'👨‍🍳',done:dP,total:tP});
+  let dM=0,tM=0; REF.materiel.forEach(m=>{const pr=(p.materiel[m.id]&&p.materiel[m.id].comps)||{};dM+=m.comps.filter(c=>pr[c.id]&&pr[c.id].done).length;tM+=m.comps.length;});
+  rows.push({key:'materiel',label:'Matériel',emo:'⚙️',done:dM,total:tM});
+  rows.push({key:'elearning',label:'E-Learning',emo:'💻',done:REF.elearning.filter(e=>p.elearning[e.id]).length,total:REF.elearning.length});
+  rows.push({key:'reglementaire',label:'Réglementaire',emo:'📋',done:REF.reglementaire.filter(r=>p.reglementaire[r.id]&&p.reglementaire[r.id].done).length,total:REF.reglementaire.length});
+  return rows;
+}
+function totalDone(p){ return moduleStats(p).reduce((s,r)=>s+r.done,0); }
+function totalAll(p){ return moduleStats(p).reduce((s,r)=>s+r.total,0); }
+function globalPct(p){ const t=totalAll(p); return t?Math.round(totalDone(p)/t*100):0; }
+function eadDone(p,cid){ return p.ead&&p.ead[cid]&&p.ead[cid].done; }
+function eadStageOf(p){ let cur=0; const N=REF.eadStages.length; for(let s=1;s<=N;s++){ const ok=REF.eadComps.every(c=>c.stage>s||eadDone(p,c.id)); if(ok)cur=s; else break; } return cur; }
+function eadStageInfo(p){ const cur=eadStageOf(p),next=Math.min(cur+1,REF.eadStages.length); let done=0,total=0; REF.eadComps.forEach(c=>{ if(c.stage<=next){total++; if(eadDone(p,c.id))done++;} }); return {cur,next,done,total,pct:total?Math.round(done/total*100):0,atMax:cur>=REF.eadStages.length}; }
+function eadOpenSession(p){ const t=todayISO(); return (p.eadSessions||[]).find(s=>s.status==='ouverte'||(s.status==='planifiee'&&s.openDate&&s.openDate<=t&&(!s.closeDate||s.closeDate>=t)))||null; }
+function eadLocked(p){ return !eadOpenSession(p); }
+
+/* badges */
+const BADGES=[{id:'b_first',emo:'👣',name:'Premiers pas',test:p=>totalDone(p)>=1},{id:'b_af',emo:'🥗',name:'Maître Atelier Fraîcheur',test:p=>posteDone(p,'atelier_fraicheur')},{id:'b_plancha',emo:'🍳',name:'As de la Plancha',test:p=>posteDone(p,'plancha')},{id:'b_dessert',emo:'🍰',name:'Roi du Dessert',test:p=>posteDone(p,'dessert')},{id:'b_bar',emo:'🥤',name:'Barista',test:p=>posteDone(p,'bar')},{id:'b_caisse',emo:'🧾',name:'Champion Caisse',test:p=>posteDone(p,'caisse')},{id:'b_salle',emo:'🍽️',name:'Pro de la Salle',test:p=>posteDone(p,'salle')},{id:'b_reception',emo:'📦',name:'Expert Réception',test:p=>posteDone(p,'reception')},{id:'b_laverie',emo:'🍴',name:'Ninja Laverie',test:p=>posteDone(p,'laverie')},{id:'b_tribu',emo:'🌟',name:'Dans la tribu',test:p=>REF.elearning.every(e=>p.elearning[e.id])},{id:'b_machines',emo:'⚙️',name:'Maître des machines',test:p=>REF.materiel.every(m=>matDone(p,m.id))},{id:'b_secu',emo:'🛡️',name:'Sécurité d’abord',test:p=>REF.reglementaire.some(r=>p.reglementaire[r.id]&&p.reglementaire[r.id].done)},{id:'b_trio',emo:'🎯',name:'Trio gagnant',test:p=>REF.postes.filter(x=>posteDone(p,x.id)).length>=3},{id:'b_couteau',emo:'🔧',name:'Couteau suisse',test:p=>REF.postes.length>0&&REF.postes.every(x=>posteDone(p,x.id))},{id:'b_half',emo:'🚀',name:'À mi-chemin',test:p=>globalPct(p)>=50},{id:'b_full',emo:'🏆',name:'Passeport complet',test:p=>globalPct(p)>=100}];
+const CHALLENGES=[{id:'c1',title:'Valider ton premier poste',hint:'Complète 100% d’un poste de travail',reward:'+ Badge poste',test:p=>REF.postes.some(x=>posteDone(p,x.id))},{id:'c2',title:'Boucler les e-learning obligatoires',hint:'Tous les modules e-learning',reward:'Badge « Dans la tribu »',test:p=>REF.elearning.every(e=>p.elearning[e.id])},{id:'c3',title:'Débloquer 3 badges',hint:'Cumule les récompenses',reward:'Niveau +',test:p=>earnedBadges(p).length>=3},{id:'c4',title:'Atteindre 50% de progression globale',hint:'La moitié du passeport validée',reward:'Badge « À mi-chemin »',test:p=>globalPct(p)>=50},{id:'c5',title:'Réaliser ton 1er entretien de suivi',hint:'Suivi de période d’essai renseigné',reward:'Moment clé',test:p=>(p.suiviEssai||[]).some(e=>e&&(e.date||Object.values(e.answers||{}).some(a=>a)))},{id:'c6',title:'Devenir Couteau suisse',hint:'Valide TOUS les postes de travail',reward:'Badge légendaire',test:p=>REF.postes.length>0&&REF.postes.every(x=>posteDone(p,x.id))}];
+function earnedBadges(p){ return BADGES.filter(b=>b.test(p)); }
+const DEFAULT_RESTOS=['Héron','Noyelles','Campus Btwin','Adeo','Kiabi','Mérignac','Mondeville','Le Pontet','La Valette'];
+
+/* ===================== FABRIQUE PASSEPORT ===================== */
+function operationalTemplate(){ return {postes:{},materiel:{},elearning:{},reglementaire:{},events:[]}; }
+function operationalOnly(p){ return {postes:p.postes,materiel:p.materiel,elearning:p.elearning,reglementaire:p.reglementaire,events:p.events||[]}; }
+function ensureOperational(pp){ pp.postes=pp.postes||{}; pp.materiel=pp.materiel||{}; pp.elearning=pp.elearning||{}; pp.reglementaire=pp.reglementaire||{}; pp.events=pp.events||[]; return pp; }
+
+/* ===================== CHARGEMENT ===================== */
+function mapSession(s){ return {id:s.id,label:s.label,openDate:s.open_date,closeDate:s.close_date,status:s.status,evaluator:s.evaluator,notes:s.notes,startStage:s.start_stage,endStage:s.end_stage,closedAt:s.closed_at,managerSign:s.manager_sign,managerSignName:s.manager_sign_name,managerSignedAt:s.manager_signed_at,collabSign:s.collab_sign,collabSignName:s.collab_sign_name,collabSignedAt:s.collab_signed_at}; }
+function mapEntretien(e){ return {id:e.id,type:e.type,date:e.date,by:e.by,answers:e.answers||{},managerSign:e.manager_sign,managerSignName:e.manager_sign_name,managerSignedAt:e.manager_signed_at,collabSign:e.collab_sign,collabSignName:e.collab_sign_name,collabSignedAt:e.collab_signed_at}; }
+
+async function loadRef(){
+  const {data}=await sb.from('pp_config').select('data').eq('id','main').maybeSingle();
+  if(data&&data.data&&Array.isArray(data.data.postes)){ REF=normalizeRef(data.data); }
+  else { REF=buildDefaultRef(); if(isAdmin()){ try{ await sb.from('pp_config').upsert({id:'main',data:REF,updated_by:ME.id}); }catch(e){} } }
+}
+async function loadAll(){
+  const [rr,cc,pr,se,en,au]=await Promise.all([
+    sb.from('pp_restaurants').select('*').order('created_at'),
+    sb.from('pp_collaborators').select('*').order('created_at'),
+    sb.from('pp_ead_progress').select('*'),
+    sb.from('pp_ead_sessions').select('*').order('open_date'),
+    sb.from('pp_entretiens').select('*').order('created_at'),
+    sb.from('pp_audit_log').select('*').order('created_at',{ascending:false}).limit(600)
+  ]);
+  const rests=rr.data||[],collabs=cc.data||[],prog=pr.data||[],sess=se.data||[],entr=en.data||[];
+  STORE.audit=au.data||[];
+  const byId={};
+  collabs.forEach(c=>{ const pp=ensureOperational(c.passport||{}); pp.ead={}; pp.eadSessions=[]; pp.suiviEssai=[]; pp.suiviEmp=[]; c._pp=pp; byId[c.id]=c; });
+  prog.forEach(r=>{ const c=byId[r.collaborator_id]; if(c)c._pp.ead[r.comp_id]={done:r.done,date:r.done_at}; });
+  sess.forEach(s=>{ const c=byId[s.collaborator_id]; if(c)c._pp.eadSessions.push(mapSession(s)); });
+  entr.forEach(e=>{ const c=byId[e.collaborator_id]; if(c)(e.type==='essai'?c._pp.suiviEssai:c._pp.suiviEmp).push(mapEntretien(e)); });
+  STORE.restaurants=rests.map(r=>({id:r.id,name:r.name,city:r.city,collaborators:collabs.filter(c=>c.restaurant_id===r.id).map(c=>({id:c.id,firstName:c.first_name,lastName:c.last_name,role:c.role,entryDate:c.entry_date,archived:c.archived,passport:c._pp}))}));
+}
+let reloadTimer=null;
+function scheduleReload(){ clearTimeout(reloadTimer); reloadTimer=setTimeout(async()=>{ await loadRef(); await loadAll(); render(); },350); }
+async function reloadAndRender(){ await loadAll(); render(); }
+async function audit(entity_type,collaborator_id,action,detail,entity_id){ try{ await sb.from('pp_audit_log').insert({entity_type,collaborator_id:collaborator_id||null,action,detail,entity_id:entity_id||null,actor_id:ME.id,actor_name:ME.full_name||ME.email,actor_role:ME.role}); }catch(e){} }
+
+/* ===================== NAV ===================== */
+function go(name,opts={}){ VIEW={...VIEW,name,...opts}; render(); window.scrollTo({top:0}); }
+function getResto(id){ return STORE.restaurants.find(r=>r.id===id); }
+function getCollab(r,id){ return r&&r.collaborators.find(c=>c.id===id); }
+function curCollab(){ const r=getResto(VIEW.rid); return getCollab(r,VIEW.cid); }
+
+/* ===================== RENDER ===================== */
+const app=document.getElementById('app');
+function render(){
+  renderTop(); renderCrumbs();
+  if(VIEW.name==='dashboard') return renderDashboard();
+  if(VIEW.name==='resto') return renderResto();
+  if(VIEW.name==='passport') return renderPassport();
+  return renderHome();
+}
+function renderTop(){
+  document.getElementById('topActions').innerHTML=`
+    <button class="icon-btn" onclick="go('dashboard')" title="Comparer les restaurants">📊 Tableau de bord</button>
+    ${isAdmin()?`<button class="icon-btn" onclick="modalRef()" title="Modifier la liste des questions">📝 Référentiel</button><button class="icon-btn" onclick="modalShare()" title="Inviter des directeurs">👥 Accès</button>`:''}
+    <div class="user-chip"><span class="un">${esc(ME.full_name||ME.email)}</span><span class="role-pill ${isAdmin()?'admin':'invite'}">${isAdmin()?'Admin':'Directeur invité'}</span><button class="icon-btn" style="padding:6px 9px" onclick="modalAccount()" title="Mon compte">⚙</button></div>`;
+}
+function renderCrumbs(){
+  const c=document.getElementById('crumbs');
+  if(VIEW.name==='dashboard'){ c.innerHTML='<a onclick="go(\'home\')">Restaurants</a><span class="sep">›</span><span class="cur">📊 Tableau de bord</span>'; return; }
+  let h='<a onclick="go(\'home\')">Restaurants</a>';
+  if(VIEW.name==='resto'||VIEW.name==='passport'){ const r=getResto(VIEW.rid); if(r){ h+='<span class="sep">›</span>'; h+=VIEW.name==='resto'?`<span class="cur">${esc(r.name)}</span>`:`<a onclick="go('resto',{rid:'${r.id}'})">${esc(r.name)}</a>`; } }
+  if(VIEW.name==='passport'){ const r=getResto(VIEW.rid),co=getCollab(r,VIEW.cid); if(co)h+=`<span class="sep">›</span><span class="cur">${esc(co.firstName+' '+co.lastName)}</span>`; }
+  c.innerHTML=h;
+}
+function renderHome(){
+  const rs=STORE.restaurants;
+  let cards=rs.map(r=>{ const act=r.collaborators.filter(c=>!c.archived); const avg=act.length?Math.round(act.reduce((s,c)=>s+globalPct(c.passport),0)/act.length):0;
+    return `<div class="card click" onclick="go('resto',{rid:'${r.id}'})"><div class="card-top-strip"></div><div class="resto-icon">🏠</div><h3>${esc(r.name)}</h3><div class="sub">${esc(r.city||'Restaurant Salad&Co')}</div><div class="stat-row"><div class="stat"><b>${act.length}</b><span>Collaborateurs</span></div><div class="stat"><b>${avg}%</b><span>Progression moy.</span></div></div></div>`;
+  }).join('');
+  if(isAdmin()) cards+=`<div class="add-card" onclick="modalResto()"><div class="plus">+</div>Nouveau restaurant</div>`;
+  app.innerHTML=`<div class="page-head"><div><h1>Vos restaurants</h1><p>Chaque restaurant gère sa propre équipe et ses passeports collaborateurs.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" onclick="go('dashboard')">📊 Comparer les restaurants</button>${isAdmin()?`<button class="btn" onclick="modalResto()">＋ Nouveau restaurant</button>`:''}</div></div>${rs.length===0?`<div class="empty"><div class="emo">🏝️</div><h3>Aucun restaurant</h3><p>${isAdmin()?'Créez votre premier restaurant.':'Aucune donnée pour l’instant.'}</p></div>`:`<div class="grid">${cards}</div>`}`;
+}
+function renderResto(){
+  const r=getResto(VIEW.rid); if(!r){go('home');return;}
+  const showArch=VIEW.arch===true;
+  const act=r.collaborators.filter(c=>!c.archived),arch=r.collaborators.filter(c=>c.archived);
+  const list=showArch?arch:act;
+  let cards=list.map(c=>collabCard(r,c)).join('');
+  if(!showArch&&isAdmin()) cards+=`<div class="add-card" onclick="modalCollab('${r.id}')"><div class="plus">+</div>Nouveau collaborateur</div>`;
+  app.innerHTML=`<div class="page-head"><div><h1>${esc(r.name)}</h1><p>${act.length} actif(s) · ${arch.length} archivé(s)</p></div>${!showArch&&isAdmin()?`<button class="btn" onclick="modalCollab('${r.id}')">＋ Nouveau collaborateur</button>`:''}</div>
+    <div class="subtabs" style="max-width:360px"><div class="subtab ${!showArch?'active':''}" onclick="go('resto',{rid:'${r.id}',arch:false})">Actifs <span class="cnt">${act.length}</span></div><div class="subtab ${showArch?'active':''}" onclick="go('resto',{rid:'${r.id}',arch:true})">Archivés <span class="cnt">${arch.length}</span></div></div>
+    ${list.length===0?`<div class="empty"><div class="emo">${showArch?'📁':'👥'}</div><h3>${showArch?'Aucun passeport archivé':'Aucun collaborateur'}</h3><p>${showArch?'Les passeports archivés apparaîtront ici.':(isAdmin()?'Ajoutez un collaborateur pour créer son passeport.':'')}</p></div>`:''}
+    <div class="grid">${cards}</div>`;
+}
+function collabCard(r,c){
+  const p=c.passport,pct=globalPct(p),est=eadStageOf(p),eObj=est>0?REF.eadStages[est-1]:null,badges=earnedBadges(p);
+  const miniB=BADGES.slice(0,7).map(b=>`<div class="mini-badge ${badges.find(x=>x.id===b.id)?'':'locked'}" title="${esc(b.name)}">${b.emo}</div>`).join('');
+  return `<div class="card collab-card ${c.archived?'':'click'}" ${c.archived?'':`onclick="go('passport',{rid:'${r.id}',cid:'${c.id}',tab:'overview'})"`}>
+    ${c.archived?'<span class="archived-tag">Archivé</span>':'<div class="card-top-strip"></div>'}
+    <div class="collab-head"><div class="avatar">${initials(c)}</div><div class="who"><b>${esc(c.firstName+' '+c.lastName)}</b><span>${esc(c.role||'—')} · depuis le ${frDate(c.entryDate)}</span><div class="lvl-pill">${eObj?eObj.emo:'🌰'} ${eObj?esc(eObj.name):'En intégration'}</div></div></div>
+    <div class="progress-wrap"><div class="progress-line"><span>Progression du passeport</span><b>${pct}%</b></div><div class="bar"><i style="width:${pct}%"></i></div></div>
+    <div class="mini-badges">${miniB}<div class="mini-badge" style="background:#fff;color:var(--muted);font-weight:700;font-size:11px">${badges.length}/${BADGES.length}</div></div>
+    <div class="collab-actions" onclick="event.stopPropagation()">
+      ${c.archived?`${isAdmin()?`<button class="tiny-btn" onclick="restoreCollab('${r.id}','${c.id}')">↩ Restaurer</button><button class="tiny-btn danger" onclick="deleteCollab('${r.id}','${c.id}')">🗑 Supprimer</button>`:`<button class="btn small" style="flex:1" onclick="go('passport',{rid:'${r.id}',cid:'${c.id}',tab:'overview'})">Consulter</button>`}`
+        :`<button class="btn small" style="flex:2" onclick="go('passport',{rid:'${r.id}',cid:'${c.id}',tab:'overview'})">Ouvrir le passeport</button>${isAdmin()?`<button class="tiny-btn" title="Archiver" onclick="archiveCollab('${r.id}','${c.id}')">📁</button><button class="tiny-btn danger" title="Supprimer" onclick="deleteCollab('${r.id}','${c.id}')">🗑</button>`:''}`}
+    </div></div>`;
+}
+function renderPassport(){
+  const r=getResto(VIEW.rid); if(!r){go('home');return;}
+  const c=getCollab(r,VIEW.cid); if(!c){go('resto',{rid:r.id});return;}
+  const p=c.passport; prevStage=eadStageOf(p);
+  const pct=globalPct(p),ead=eadStageInfo(p),stObj=ead.cur>0?REF.eadStages[ead.cur-1]:null,nextObj=ead.atMax?null:REF.eadStages[ead.next-1],eadLk=eadLocked(p);
+  const tabs=[['overview','Vue d’ensemble','🎮'],['evolution','Évolution EAD '+(eadLk?'🔒':'🔓'),'🌱'],['postes','Formation par poste','👨‍🍳'],['materiel','Matériel','⚙️'],['elearning','E-Learning','💻'],['reglementaire','Réglementaire','📋'],['suivi','Suivi & entretiens','💬']];
+  const tabsH=tabs.map(t=>`<div class="subtab ${VIEW.tab===t[0]?'active':''}" onclick="go('passport',{tab:'${t[0]}'})">${t[2]} ${t[1]}</div>`).join('');
+  let body='';
+  if(VIEW.tab==='overview')body=renderOverview(p,c);
+  else if(VIEW.tab==='evolution')body=renderEAD(p,c);
+  else if(VIEW.tab==='postes')body=renderPostes(p);
+  else if(VIEW.tab==='materiel')body=renderMateriel(p);
+  else if(VIEW.tab==='elearning')body=renderElearning(p);
+  else if(VIEW.tab==='reglementaire')body=renderReglementaire(p);
+  else if(VIEW.tab==='suivi')body=renderSuivi(p);
+  app.innerHTML=`<div class="pp-hero"><div class="pp-hero-top"><div class="pp-avatar">${initials(c)}</div><div class="pp-id"><h2>${esc(c.firstName+' '+c.lastName)}</h2><div class="meta">Poste : <b>${esc(c.role||'—')}</b> · Entrée le <b>${frDate(c.entryDate)}</b> · <b>${esc(r.name)}</b></div></div>
+    <div class="lvlbox"><div class="lvl-name">${stObj?esc(stObj.name):'En intégration'}</div><div class="lvl-num" style="font-size:42px">${stObj?stObj.emo:'🌰'}</div><div class="xp">Stade ${ead.cur}/${REF.eadStages.length} · ${earnedBadges(p).length} badges · passeport ${pct}%</div></div></div>
+    <div class="pp-xpbar"><div class="lab"><span>${nextObj?('Vers '+nextObj.emo+' '+esc(nextObj.name)+' · '+ead.done+'/'+ead.total+' compétences'):'🌍 Stade maximal atteint 🎉'}</span><span>${ead.pct}%</span></div><div class="bar"><i style="width:${ead.pct}%"></i></div></div></div>
+    <div class="subtabs">${tabsH}</div><div id="ppbody">${body}</div>`;
+}
+function renderOverview(p,c){
+  const mods=moduleStats(p).map(m=>{const pct=m.total?Math.round(m.done/m.total*100):0;return `<div class="mp-row ${pct===100?'done':''}"><div class="mp-top"><span class="nm">${m.emo} ${m.label}</span><span class="vl">${m.done}/${m.total} · ${pct}%</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;}).join('');
+  const earned=earnedBadges(p);
+  const badgeH=BADGES.map(b=>`<div class="badge ${earned.find(x=>x.id===b.id)?'':'locked'}" title="${esc(b.name)}"><div class="emo">${b.emo}</div><div class="bn">${esc(b.name)}</div></div>`).join('');
+  const chalH=CHALLENGES.map(ch=>{const done=ch.test(p);return `<div class="chal ${done?'done':''}"><div class="ck">${done?'✓':''}</div><div class="ctxt"><b>${esc(ch.title)}</b><span>${esc(ch.hint)}</span></div><div class="reward">🎁 ${esc(ch.reward)}</div></div>`;}).join('');
+  const tl=buildTimeline(p,c).map(t=>`<div class="tl-item ${t.milestone?'milestone':''}"><div class="tl-dot">${t.milestone?'★':''}</div><div class="tl-date">${t.date}</div><div class="tl-txt">${t.txt}</div></div>`).join('');
+  const jrn=(STORE.audit||[]).filter(a=>a.collaborator_id===c.id).slice(0,14).map(a=>`<div class="jrow"><div class="jt">${frDateTime(a.created_at)}</div><div class="jd"><b>${esc(a.action)}</b>${a.detail?(' — '+esc(a.detail)):''}<br><span class="ja">${esc(a.actor_name||'')}</span></div></div>`).join('')||'<p class="phint">Aucune modification enregistrée.</p>';
+  return `<div class="dash"><div style="display:flex;flex-direction:column;gap:18px">
+    <div class="panel"><h3>📊 Progression par module</h3><p class="phint">Avancement dans chaque partie du passeport.</p><div class="module-prog">${mods}</div></div>
+    <div class="panel"><h3>🎯 Défis & objectifs</h3><p class="phint">Des paliers concrets pour rythmer la montée en compétence.</p><div class="challenges">${chalH}</div></div>
+    <div class="panel"><h3>🕓 Journal des modifications</h3><p class="phint">Horodatage de chaque évaluation, note et signature sur ce collaborateur.</p><div class="journal">${jrn}</div></div>
+  </div><div style="display:flex;flex-direction:column;gap:18px">
+    <div class="panel"><h3>🏅 Badges <span style="font-size:12px;color:var(--muted);font-weight:400">(${earned.length}/${BADGES.length})</span></h3><p class="phint">Débloqués en validant les postes et modules.</p><div class="badges-grid">${badgeH}</div></div>
+    <div class="panel"><h3>🗺️ Timeline & moments clés</h3><p class="phint">Le parcours du collaborateur.</p><div class="timeline">${tl}</div></div>
+  </div></div>`;
+}
+function buildTimeline(p,c){
+  const items=[]; items.push({iso:c.entryDate,date:frDate(c.entryDate),txt:'🎉 <b>Arrivée dans l’équipe</b> — bienvenue dans la tribu !',milestone:true});
+  const start=new Date(c.entryDate||todayISO()),now=new Date();
+  [[1,'1 mois'],[3,'3 mois'],[6,'6 mois'],[12,'1 an'],[24,'2 ans'],[36,'3 ans'],[60,'5 ans']].forEach(([m,lab])=>{ const d=new Date(start); d.setMonth(d.getMonth()+m); if(d<=now)items.push({iso:d.toISOString().slice(0,10),date:frDate(d.toISOString().slice(0,10)),txt:`🕒 <b>${lab} d’ancienneté</b>`,milestone:false}); });
+  (p.events||[]).forEach(ev=>items.push({iso:ev.iso,date:frDate(ev.iso),txt:ev.txt,milestone:ev.milestone}));
+  (p.eadSessions||[]).forEach(s=>{ if(s.status==='cloturee'&&s.closedAt){ const st=s.endStage>0&&REF.eadStages[s.endStage-1]?(REF.eadStages[s.endStage-1].emo+' '+REF.eadStages[s.endStage-1].name):'🌰'; items.push({iso:s.closedAt,date:frDate(s.closedAt),txt:`📋 <b>${esc(s.label)} clôturée</b> — ${st}`,milestone:true}); } });
+  (p.suiviEssai||[]).forEach(e=>{ if(e.date)items.push({iso:e.date,date:frDate(e.date),txt:'💬 <b>Entretien période d’essai</b>',milestone:false}); });
+  (p.suiviEmp||[]).forEach(e=>{ if(e.date)items.push({iso:e.date,date:frDate(e.date),txt:'💬 <b>Entretien de suivi</b>',milestone:false}); });
+  items.sort((a,b)=>(a.iso||'').localeCompare(b.iso||'')); return items;
+}
+function toggleOpen(id){ VIEW.open=(VIEW.open===id?null:id); render(); }
+function renderPostes(p){
+  const ro=!isAdmin();
+  return REF.postes.map(po=>{ const pr=posteProg(p,po.id),done=po.comps.filter(c=>pr[c.id]&&pr[c.id].done).length,tot=po.comps.length,pct=tot?Math.round(done/tot*100):0,open=VIEW.open===po.id;
+    const comps=po.comps.map(c=>{const cc=pr[c.id]||{};return `<div class="comp ${cc.done?'on':''}"><div class="cbox ${ro?'ro':''}" onclick="toggleComp('${po.id}','${c.id}')">${cc.done?'✓':''}</div><div class="clabel">${esc(c.label)}${c.help?` <span class="chelp">(${esc(c.help)})</span>`:''}${cc.done&&cc.date?`<div class="cdate">✓ validé le ${frDate(cc.date)}</div>`:''}</div></div>`;}).join('');
+    const st=p.postes[po.id]||{};
+    return `<div class="module-block ${open?'open':''}"><div class="mb-head" onclick="toggleOpen('${po.id}')"><div class="mb-emo">${po.emo}</div><div class="mb-title"><b>${esc(po.nom)}</b><div class="mb-sub">${esc(po.sub||'')}</div></div><div class="mb-prog">${pct===100?'<span class="mb-badge-done">✓ Validé</span>':`<span class="ring">${pct}%</span>`}<div style="width:70px" class="bar"><i style="width:${pct}%"></i></div><span class="mb-chevron">▼</span></div></div>
+      <div class="mb-body">${comps}<div class="eval-note"><span>📝</span><div style="flex:1">Commentaire / évaluation du formateur<textarea ${ro?'disabled':''} onchange="setEval('${po.id}',this.value)" placeholder="Date, validation OUI/NON, remarques…">${esc(st.eval||'')}</textarea></div></div></div></div>`;
+  }).join('');
+}
+function renderMateriel(p){
+  const ro=!isAdmin();
+  return `<p style="color:var(--muted);font-size:13px;margin:-6px 0 16px">Formation à l’utilisation et au nettoyage des machines.</p>`+REF.materiel.map(m=>{ const pr=(p.materiel[m.id]&&p.materiel[m.id].comps)||{},done=m.comps.filter(c=>pr[c.id]&&pr[c.id].done).length,tot=m.comps.length,pct=tot?Math.round(done/tot*100):0,open=VIEW.open==='mat_'+m.id;
+    const comps=m.comps.map(c=>{const cc=pr[c.id]||{};return `<div class="comp ${cc.done?'on':''}"><div class="cbox ${ro?'ro':''}" onclick="toggleMat('${m.id}','${c.id}')">${cc.done?'✓':''}</div><div class="clabel">${esc(c.label)}${cc.done&&cc.date?`<div class="cdate">✓ ${frDate(cc.date)}</div>`:''}</div></div>`;}).join('');
+    return `<div class="module-block ${open?'open':''}"><div class="mb-head" onclick="toggleOpen('mat_${m.id}')"><div class="mb-emo">${m.emo}</div><div class="mb-title"><b>${esc(m.nom)}</b><div class="mb-sub">${tot} point(s) de contrôle</div></div><div class="mb-prog">${pct===100?'<span class="mb-badge-done">✓</span>':`<span class="ring">${pct}%</span>`}<div style="width:60px" class="bar"><i style="width:${pct}%"></i></div><span class="mb-chevron">▼</span></div></div><div class="mb-body">${comps}</div></div>`;
+  }).join('');
+}
+function renderElearning(p){
+  const ro=!isAdmin();
+  const rows=REF.elearning.map(e=>`<div class="comp ${p.elearning[e.id]?'on':''}" style="padding:15px 0"><div class="cbox ${ro?'ro':''}" onclick="toggleElearn('${e.id}')">${p.elearning[e.id]?'✓':''}</div><div class="clabel"><b style="font-size:14px">${esc(e.title)}</b> ${e.duree?`<span style="background:var(--green-l);color:var(--green-d);font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px">⏱ ${esc(e.duree)}</span>`:''}<div class="chelp" style="margin-top:2px">${esc(e.desc||'')}</div></div></div>`).join('');
+  return `<div class="module-block open"><div class="mb-head" style="cursor:default"><div class="mb-emo">💻</div><div class="mb-title"><b>Chemins obligatoires E-Learning</b><div class="mb-sub">À valider par tout nouveau collaborateur</div></div></div><div class="mb-body">${rows}</div></div>`;
+}
+function renderReglementaire(p){
+  const ro=!isAdmin();
+  return `<p style="color:var(--muted);font-size:13px;margin:-6px 0 16px">Formations réglementaires et certifications.</p>`+REF.reglementaire.map(r=>{ const st=p.reglementaire[r.id]||{};
+    return `<div class="module-block open"><div class="mb-head" style="cursor:default"><div class="mb-emo">${r.emo||'📋'}</div><div class="mb-title"><b>${esc(r.title)}</b><div class="mb-sub">${esc(r.detail||'')}</div></div><div class="mb-prog"><div class="cbox ${ro?'ro':''}" style="${st.done?'background:var(--green);border-color:var(--green)':''}" onclick="toggleRegl('${r.id}')">${st.done?'✓':''}</div></div></div>
+      <div class="mb-body"><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1;min-width:140px"><label>Date de formation</label><input type="date" ${ro?'disabled':''} value="${st.date||''}" onchange="setRegl('${r.id}','date',this.value)"></div><div class="field" style="flex:2;min-width:180px"><label>Commentaire(s)</label><input type="text" ${ro?'disabled':''} value="${esc(st.comment||'')}" onchange="setRegl('${r.id}','comment',this.value)" placeholder="Organisme, niveau, recyclage…"></div></div></div></div>`;
+  }).join('');
+}
+function renderSuivi(p){
+  const ro=!isAdmin();
+  function block(title,arr,qs,type){
+    let h=`<div class="panel" style="margin-bottom:18px"><h3>${title}</h3>`;
+    if(arr.length===0)h+=`<p class="phint">Aucun entretien enregistré.</p>`;
+    arr.forEach((e,idx)=>{ h+=`<div class="module-block" style="margin-top:12px"><div class="mb-head" style="cursor:default"><div class="mb-title"><b>Entretien #${idx+1}</b><div class="mb-sub">${e.date?('le '+frDate(e.date)):''}${e.by?(' · '+esc(e.by)):''}</div></div>${!ro?`<button class="tiny-btn danger" onclick="delEntretien('${e.id}')">🗑</button>`:''}</div><div class="mb-body">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px"><div class="field" style="flex:1;min-width:150px"><label>Date</label><input type="date" ${ro?'disabled':''} value="${e.date||''}" onchange="setEntretien('${e.id}','date',this.value)"></div><div class="field" style="flex:1;min-width:150px"><label>Fait par</label><input type="text" ${ro?'disabled':''} value="${esc(e.by||'')}" onchange="setEntretien('${e.id}','by',this.value)" placeholder="Manager / formateur"></div></div>
+      ${qs.map(q=>`<div class="field"><label>${esc(q.q)}</label><textarea ${ro?'disabled':''} onchange="setEntretienAns('${e.id}','${q.id}',this.value)">${esc((e.answers&&e.answers[q.id])||'')}</textarea></div>`).join('')}
+      ${signatureBlock('entretien',e)}
+      </div></div>`; });
+    if(!ro)h+=`<button class="btn ghost small" style="margin-top:12px" onclick="addEntretien('${type}')">＋ Ajouter un entretien</button>`;
+    h+=`</div>`; return h;
+  }
+  return block('🌱 Suivi de période d’essai',p.suiviEssai,REF.suiviEssai,'essai')+block('💬 Suivi employé',p.suiviEmp,REF.suiviEmp,'emp');
+}
+function renderEAD(p,c){
+  const info=eadStageInfo(p),senM=monthsSince(c.entryDate),open=eadOpenSession(p),locked=!open;
+  const banner=open
+    ? `<div class="ead-lock openw"><span class="lk">🔓</span><div><b>Évaluation ouverte</b> — « ${esc(open.label)} »${open.closeDate?(' · jusqu’au '+frDate(open.closeDate)):''}. Les compétences sont modifiables.</div><button class="btn small" onclick="closeEadSession('${open.id}')">Clôturer l’évaluation</button></div>`
+    : `<div class="ead-lock"><span class="lk">🔒</span><div><b>Évolution EAD verrouillée</b> — consultation uniquement. Une évaluation EAD a lieu chaque année : programmez une fenêtre pour autoriser les modifications.</div><button class="btn small" onclick="planEadSession()">＋ Programmer une évaluation</button></div>`;
+  const sessions=(p.eadSessions||[]).slice().sort((a,b)=>(b.openDate||'').localeCompare(a.openDate||''));
+  const histRows=sessions.length?sessions.map(s=>{
+    const chip=s.status==='ouverte'?'<span class="sess-chip open">🔓 Ouverte</span>':s.status==='cloturee'?'<span class="sess-chip closed">✓ Clôturée</span>':'<span class="sess-chip planned">🗓 Planifiée</span>';
+    const stg=s.endStage!=null?(s.endStage>0&&REF.eadStages[s.endStage-1]?(REF.eadStages[s.endStage-1].emo+' '+esc(REF.eadStages[s.endStage-1].name)):'🌰 En intégration'):'—';
+    let acts=''; if(s.status==='planifiee')acts=`<button class="tiny-btn" onclick="openEadNow('${s.id}')">🔓 Ouvrir</button><button class="tiny-btn danger" onclick="delEadSession('${s.id}')">🗑</button>`; else if(s.status==='ouverte')acts=`<button class="tiny-btn" onclick="closeEadSession('${s.id}')">✓ Clôturer</button>`; else acts=isAdmin()?`<button class="tiny-btn danger" onclick="delEadSession('${s.id}')">🗑</button>`:'';
+    return `<div class="sess-row"><div class="sess-main"><div class="sess-top"><b>${esc(s.label)}</b> ${chip}</div><div class="sess-meta">🗓 ${frDate(s.openDate)}${s.closeDate?(' → '+frDate(s.closeDate)):''}${s.evaluator?(' · 👤 '+esc(s.evaluator)):''}${s.status==='cloturee'?(' · Stade atteint : <b>'+stg+'</b>'):''}</div><input class="sess-note" value="${esc(s.notes||'')}" onchange="setEadSessionNote('${s.id}',this.value)" placeholder="Note de synthèse de l’évaluation…">${s.status==='cloturee'?signatureBlock('session',s):''}</div><div class="sess-acts">${acts}</div></div>`;
+  }).join(''):'<p class="phint">Aucune évaluation enregistrée pour l’instant.</p>';
+  const histPanel=`<div class="panel" style="margin-bottom:18px"><h3>🗂️ Historique des évaluations EAD <span style="font-size:12px;color:var(--muted);font-weight:400">(1 par an)</span></h3><p class="phint">Chaque évaluation annuelle est conservée avec le stade atteint et les signatures. Prochaine évaluation recommandée : <b>${nextEadDate(sessions,c)}</b>.</p>${histRows}</div>`;
+  const intro=`<div class="panel" style="margin-bottom:18px"><h3>🌱 Parcours d’évolution EAD</h3><p class="phint">L’échelle « nature » de Salad&Co. Chaque stade se débloque lorsque toutes les compétences des stades précédents sont acquises.</p><div style="display:flex;gap:8px;flex-wrap:wrap">${Object.entries(EAD_CATS).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-soft)"><span style="width:11px;height:11px;border-radius:3px;background:${v.c}"></span>${v.n}</span>`).join('')}</div></div>`;
+  const blocks=REF.eadStages.map((s,si)=>{ const stageNum=si+1,comps=REF.eadComps.filter(c=>c.stage===stageNum),done=comps.filter(c=>eadDone(p,c.id)).length,tot=comps.length,pct=tot?Math.round(done/tot*100):0,acquired=info.cur>=stageNum,isCurrent=info.cur===stageNum||info.cur===stageNum-1,open2=VIEW.open==='ead_'+stageNum||(VIEW.open==null&&info.next===stageNum),col=eadColor(stageNum);
+    const rows=comps.map(c=>{ const cat=EAD_CATS[c.cat]||EAD_CATS.AUTRE,on=eadDone(p,c.id),d=p.ead[c.id]||{}; return `<div class="comp ${on?'on':''}"><div class="cbox ${locked?'ro':''}" onclick="toggleEad('${c.id}',${stageNum})" title="${locked?'Verrouillé':'Cocher / décocher'}">${on?'✓':''}</div><div class="clabel"><span class="cattag" style="background:${cat.c}">${esc(cat.n)}</span> ${esc(c.label)}${on&&d.date?`<div class="cdate">✓ acquis le ${frDate(d.date)}</div>`:''}</div></div>`;}).join('');
+    return `<div class="module-block ead-block ${open2?'open':''} ${acquired?'acq':''}" style="border-left:5px solid ${col}"><div class="mb-head" onclick="toggleOpen('ead_${stageNum}')"><div class="mb-emo" style="background:${col}22">${s.emo}</div><div class="mb-title"><b>${esc(s.name)}</b> ${acquired?'<span class="mb-badge-done">✓ Atteint</span>':(isCurrent?'<span class="stage-cur">En cours</span>':'')}<div class="mb-sub">${esc(s.obj||'')} · <i>${esc(s.sen||'')}</i></div></div><div class="mb-prog"><span class="ring">${done}/${tot}</span><div style="width:64px" class="bar"><i style="width:${pct}%;background:${col}"></i></div><span class="mb-chevron">▼</span></div></div><div class="mb-body">${rows||'<p class="phint">—</p>'}</div></div>`;
+  }).join('');
+  return banner+histPanel+intro+`<div style="display:flex;justify-content:space-between;align-items:center;margin:0 4px 12px;flex-wrap:wrap;gap:8px"><div style="font-size:13px;color:var(--ink-soft)">Ancienneté : <b>${fmtSeniority(senM)}</b></div><div style="font-size:13px;color:var(--ink-soft)">Stade actuel : <b>${info.cur>0&&REF.eadStages[info.cur-1]?(REF.eadStages[info.cur-1].emo+' '+REF.eadStages[info.cur-1].name):'🌰 En intégration'}</b></div></div>`+blocks;
+}
+function nextEadDate(sessions,c){ const closed=sessions.filter(s=>s.status==='cloturee'&&s.closedAt).sort((a,b)=>b.closedAt.localeCompare(a.closedAt)); const base=closed.length?closed[0].closedAt:c.entryDate; if(!base)return '—'; const d=new Date(base); d.setFullYear(d.getFullYear()+1); return frDate(d.toISOString().slice(0,10)); }
+function signatureBlock(kind,obj){
+  function slot(role,sign,name,at){ const label=role==='manager'?'Évaluateur (manager)':'Collaborateur';
+    if(sign) return `<div class="signbox"><div class="sl">${label}</div><div class="simg"><img src="${sign}"></div><div class="smeta">✍️ <b>${esc(name||'')}</b> · le ${frDateTime(at)}</div></div>`;
+    return `<div class="signbox"><div class="sl">${label}</div><div class="simg" style="color:var(--muted);font-size:12px">Non signé</div><div class="smeta"><button class="btn ghost small" onclick="openSign('${kind}','${obj.id}','${role}')">✍️ Signer</button></div></div>`;
+  }
+  return `<div class="signrow">${slot('manager',obj.managerSign,obj.managerSignName,obj.managerSignedAt)}${slot('collab',obj.collabSign,obj.collabSignName,obj.collabSignedAt)}</div>`;
+}
+function renderDashboard(){
+  const data=STORE.restaurants.map(r=>{ const act=r.collaborators.filter(c=>!c.archived),n=act.length,avg=n?Math.round(act.reduce((s,c)=>s+globalPct(c.passport),0)/n):0,dist=new Array(REF.eadStages.length+1).fill(0); act.forEach(c=>dist[eadStageOf(c.passport)]++); const badges=n?(act.reduce((s,c)=>s+earnedBadges(c.passport).length,0)/n):0,senM=n?Math.round(act.reduce((s,c)=>s+monthsSince(c.entryDate),0)/n):0; return {r,n,avg,dist,badges,senM}; });
+  const totalCollab=data.reduce((s,d)=>s+d.n,0),withTeam=data.filter(d=>d.n>0).length,netAvg=totalCollab?Math.round(data.reduce((s,d)=>s+d.avg*d.n,0)/totalCollab):0,netDist=new Array(REF.eadStages.length+1).fill(0); data.forEach(d=>d.dist.forEach((v,i)=>netDist[i]+=v));
+  const legend=`<div class="legend"><div class="li"><span class="sw" style="background:${eadColor(0)}"></span>En intégration</div>${REF.eadStages.map((s,i)=>`<div class="li"><span class="sw" style="background:${eadColor(i+1)}"></span>${s.emo} ${esc(s.name)}</div>`).join('')}</div>`;
+  const ranked=[...data].sort((a,b)=>(b.n>0)-(a.n>0)||b.avg-a.avg);
+  const rankH=ranked.map(d=>`<div class="rank-row"><div class="rn" onclick="go('resto',{rid:'${d.r.id}'})">${esc(d.r.name)}</div><div class="rbar"><i style="width:${d.n?d.avg:0}%"></i><span class="rv">${d.n?d.avg+'%':'—'}</span></div><div class="rc">${d.n} collab.</div></div>`).join('');
+  const rowsH=ranked.map(d=>`<tr><td class="rname" onclick="go('resto',{rid:'${d.r.id}'})">${esc(d.r.name)}</td><td>${d.n?('<b>'+d.n+'</b>'):'<span class="dt-empty">0</span>'}</td><td>${d.n?`<div class="bar" style="width:90px"><i style="width:${d.avg}%"></i></div><span style="font-size:11px;color:var(--muted)">${d.avg}%</span>`:'<span class="dt-empty">—</span>'}</td><td class="mini-sbar hide-sm">${d.n?stackBar(d.dist,d.n):'<span class="dt-empty">—</span>'}</td><td class="hide-sm">${d.n?d.badges.toFixed(1):'<span class="dt-empty">—</span>'}</td><td class="hide-sm">${d.n?esc(fmtSeniority(d.senM)):'<span class="dt-empty">—</span>'}</td></tr>`).join('');
+  app.innerHTML=`<div class="page-head"><div><h1>📊 Tableau de bord réseau</h1><p>Comparez les résultats de vos ${STORE.restaurants.length} restaurants en temps réel.</p></div><button class="btn ghost" onclick="go('home')">← Retour</button></div>
+    <div class="dash-tiles"><div class="tile"><span class="te">🏠</span><div class="tv">${withTeam}<span style="font-size:16px;color:var(--muted)">/${STORE.restaurants.length}</span></div><div class="tl">Restaurants avec équipe</div></div><div class="tile"><span class="te">👥</span><div class="tv">${totalCollab}</div><div class="tl">Collaborateurs actifs</div></div><div class="tile"><span class="te">📈</span><div class="tv">${netAvg}%</div><div class="tl">Progression passeport réseau</div></div><div class="tile"><span class="te">🌍</span><div class="tv">${netDist.slice(1).reduce((a,b)=>a+b,0)}</div><div class="tl">Collab. ayant atteint un stade</div></div></div>
+    <div class="panel" style="margin-bottom:18px"><h3>🌱 Répartition du réseau par stade d’évolution</h3><p class="phint">Combien de collaborateurs à chaque stade EAD, tous restaurants confondus.</p>${totalCollab?stackBar(netDist,totalCollab):'<div class="sbar empty">Aucun collaborateur pour l’instant</div>'}${legend}<div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:16px">${netDist.map((v,i)=>v?`<div style="text-align:center"><div style="font-size:22px;font-weight:900;color:${eadColor(i)}">${v}</div><div style="font-size:11px;color:var(--muted)">${i===0?'🌰 Intégration':REF.eadStages[i-1].emo+' '+esc(REF.eadStages[i-1].name)}</div></div>`:'').join('')}</div></div>
+    <div class="panel" style="margin-bottom:18px"><h3>🏆 Classement par progression du passeport</h3><p class="phint">Moyenne de progression des collaborateurs actifs de chaque restaurant.</p>${rankH}</div>
+    <div class="panel"><h3>📋 Détail par restaurant</h3><p class="phint">Cliquez sur un restaurant pour ouvrir son équipe.</p><div style="overflow-x:auto"><table class="dtable"><thead><tr><th>Restaurant</th><th>Effectif</th><th>Progression</th><th class="hide-sm">Stades EAD</th><th class="hide-sm">Badges moy.</th><th class="hide-sm">Ancienneté moy.</th></tr></thead><tbody>${rowsH}</tbody></table></div></div>`;
+}
+function stackBar(dist,total){ if(!total)return '<div class="sbar empty">—</div>'; return '<div class="sbar">'+dist.map((v,i)=>v?`<span style="width:${(v/total*100).toFixed(1)}%;background:${eadColor(i)}" title="${i===0?'En intégration':esc(REF.eadStages[i-1].name)} : ${v}"></span>`:'').join('')+'</div>'; }
+
+/* ===================== MUTATIONS ===================== */
+function needAdmin(){ if(!isAdmin()){ toast('🔒 Action réservée à l’administrateur','err'); return true; } return false; }
+async function createResto(){ const n=document.getElementById('rname').value.trim(); if(!n){document.getElementById('rname').focus();return;} const city=document.getElementById('rcity').value.trim(); const {error}=await sb.from('pp_restaurants').insert({name:n,city,created_by:ME.id}); if(error)return toast('⚠ '+error.message,'err'); await audit('restaurant',null,'Création restaurant',n); closeModal(); toast('🏠 Restaurant créé'); reloadAndRender(); }
+async function createCollab(rid){ const f=document.getElementById('cf').value.trim(),l=document.getElementById('cl').value.trim(); if(!f&&!l){document.getElementById('cf').focus();return;} const {data,error}=await sb.from('pp_collaborators').insert({restaurant_id:rid,first_name:f,last_name:l,role:document.getElementById('cr').value.trim(),entry_date:document.getElementById('cd').value||todayISO(),passport:operationalTemplate()}).select().single(); if(error)return toast('⚠ '+error.message,'err'); await audit('collaborateur',data.id,'Création passeport',f+' '+l); closeModal(); toast('✅ Passeport créé'); reloadAndRender(); }
+async function archiveCollab(rid,cid){ if(needAdmin())return; await sb.from('pp_collaborators').update({archived:true}).eq('id',cid); await audit('collaborateur',cid,'Archivage',''); toast('📁 Archivé'); reloadAndRender(); }
+async function restoreCollab(rid,cid){ if(needAdmin())return; await sb.from('pp_collaborators').update({archived:false}).eq('id',cid); await audit('collaborateur',cid,'Restauration',''); toast('↩ Restauré'); reloadAndRender(); }
+function deleteCollab(rid,cid){ if(needAdmin())return; const r=getResto(rid),c=getCollab(r,cid); confirmModal('Supprimer ce passeport ?',`Le passeport de <b>${esc(c.firstName+' '+c.lastName)}</b> sera définitivement supprimé.`,async()=>{ await sb.from('pp_collaborators').delete().eq('id',cid); await audit('collaborateur',cid,'Suppression',c.firstName+' '+c.lastName); toast('🗑 Supprimé'); reloadAndRender(); }); }
+async function savePassport(c,actionLabel,detail){ const {error}=await sb.from('pp_collaborators').update({passport:operationalOnly(c.passport),updated_at:nowISO()}).eq('id',c.id); if(error){toast('⚠ '+error.message,'err');return false;} if(actionLabel)await audit('collaborateur',c.id,actionLabel,detail||''); return true; }
+async function toggleComp(pid,cid){ if(needAdmin())return; const c=curCollab(),p=c.passport; p.postes[pid]=p.postes[pid]||{comps:{},eval:''}; const cur=p.postes[pid].comps[cid]||{done:false}; const nd=!cur.done; p.postes[pid].comps[cid]={done:nd,date:nd?todayISO():null}; VIEW.open=pid; const po=REF.postes.find(x=>x.id===pid); if(nd&&posteDone(p,pid)){(p.events=p.events||[]).push({iso:todayISO(),txt:`${po.emo} <b>Poste « ${po.nom} » validé</b> à 100%`,milestone:true});} await savePassport(c,'Formation poste',(nd?'✔ ':'✖ ')+(po?po.nom:'')); reloadAndRender(); }
+async function setEval(pid,v){ if(needAdmin())return; const c=curCollab(); c.passport.postes[pid]=c.passport.postes[pid]||{comps:{},eval:''}; c.passport.postes[pid].eval=v; const po=REF.postes.find(x=>x.id===pid); await savePassport(c,'Commentaire évaluation poste',po?po.nom:''); }
+async function toggleMat(mid,cid){ if(needAdmin())return; const c=curCollab(),p=c.passport; p.materiel[mid]=p.materiel[mid]||{comps:{}}; const cur=p.materiel[mid].comps[cid]||{done:false}; const nd=!cur.done; p.materiel[mid].comps[cid]={done:nd,date:nd?todayISO():null}; VIEW.open='mat_'+mid; const m=REF.materiel.find(x=>x.id===mid); await savePassport(c,'Formation matériel',m?m.nom:''); reloadAndRender(); }
+async function toggleElearn(eid){ if(needAdmin())return; const c=curCollab(); c.passport.elearning[eid]=!c.passport.elearning[eid]; const e=REF.elearning.find(x=>x.id===eid); await savePassport(c,'E-learning',e?e.title:''); reloadAndRender(); }
+async function toggleRegl(rid){ if(needAdmin())return; const c=curCollab(); const st=c.passport.reglementaire[rid]||{done:false,date:'',comment:''}; st.done=!st.done; if(st.done&&!st.date)st.date=todayISO(); c.passport.reglementaire[rid]=st; const r=REF.reglementaire.find(x=>x.id===rid); await savePassport(c,'Réglementaire',r?r.title:''); reloadAndRender(); }
+async function setRegl(rid,k,v){ if(needAdmin())return; const c=curCollab(); const st=c.passport.reglementaire[rid]||{done:false,date:'',comment:''}; st[k]=v; c.passport.reglementaire[rid]=st; await savePassport(c,'Réglementaire (maj)',''); }
+async function toggleEad(cid,stageNum){ const c=curCollab(),p=c.passport; if(eadLocked(p)){ toast('🔒 Évolution EAD verrouillée — ouvrez une évaluation'); return; } const cur=p.ead[cid]||{done:false}; const nd=!cur.done; const before=eadStageOf(p); VIEW.open='ead_'+stageNum; const {error}=await sb.from('pp_ead_progress').upsert({collaborator_id:c.id,comp_id:cid,done:nd,done_at:nd?todayISO():null},{onConflict:'collaborator_id,comp_id'}); if(error)return toast('⚠ '+error.message,'err'); p.ead[cid]={done:nd,date:nd?todayISO():null}; const after=eadStageOf(p); if(after>before){const st=REF.eadStages[after-1];toast(st.emo+' Nouveau stade : '+st.name,'gold');} const comp=REF.eadComps.find(x=>x.id===cid); await audit('ead',c.id,'Compétence EAD',(nd?'✔ ':'✖ ')+(comp?comp.label:'')); reloadAndRender(); }
+function planEadSession(){ const y=new Date().getFullYear(),close=new Date();close.setDate(close.getDate()+14);
+  modal.innerHTML=`<h3>Programmer une évaluation EAD</h3><p class="mhint">Pendant la fenêtre, l’Évolution EAD devient modifiable. En dehors, elle reste consultable mais verrouillée.</p><div class="field"><label>Intitulé</label><input id="esl" value="Évaluation EAD ${y}"></div><div class="row2"><div class="field"><label>Ouverture</label><input id="eso" type="date" value="${todayISO()}"></div><div class="field"><label>Clôture</label><input id="esc2" type="date" value="${close.toISOString().slice(0,10)}"></div></div><div class="field"><label>Évaluateur</label><input id="ese" value="${esc(ME.full_name||'')}" placeholder="Nom du directeur / responsable"></div><div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn" onclick="createEadSession()">Programmer</button></div>`;
+  overlay.classList.add('show'); setTimeout(()=>document.getElementById('esl').focus(),50);
+}
+async function createEadSession(){ const c=curCollab(); const label=document.getElementById('esl').value.trim()||'Évaluation EAD',openDate=document.getElementById('eso').value||todayISO(),closeDate=document.getElementById('esc2').value||null,evaluator=document.getElementById('ese').value.trim(),t=todayISO(),status=(openDate<=t&&(!closeDate||closeDate>=t))?'ouverte':'planifiee'; const {error}=await sb.from('pp_ead_sessions').insert({collaborator_id:c.id,label,open_date:openDate,close_date:closeDate,evaluator,status,start_stage:eadStageOf(c.passport),created_by:ME.id}); if(error)return toast('⚠ '+error.message,'err'); await audit('ead_session',c.id,'Évaluation programmée',label); closeModal(); toast('📋 Évaluation programmée'); reloadAndRender(); }
+async function openEadNow(id){ const c=curCollab(); await sb.from('pp_ead_sessions').update({status:'ouverte',open_date:todayISO()}).eq('id',id); await audit('ead_session',c.id,'Évaluation ouverte',''); toast('🔓 Évaluation ouverte'); reloadAndRender(); }
+async function closeEadSession(id){ const c=curCollab(),endStage=eadStageOf(c.passport); await sb.from('pp_ead_sessions').update({status:'cloturee',closed_at:todayISO(),end_stage:endStage}).eq('id',id); const stName=endStage>0&&REF.eadStages[endStage-1]?REF.eadStages[endStage-1].name:'En intégration'; await audit('ead_session',c.id,'Évaluation clôturée','Stade : '+stName); closeModal(); toast('📋 Évaluation clôturée'); reloadAndRender(); }
+async function delEadSession(id){ const c=curCollab(); await sb.from('pp_ead_sessions').delete().eq('id',id); await audit('ead_session',c.id,'Évaluation supprimée',''); reloadAndRender(); }
+async function setEadSessionNote(id,v){ const c=curCollab(); await sb.from('pp_ead_sessions').update({notes:v}).eq('id',id); await audit('ead_session',c.id,'Note d’évaluation modifiée',''); }
+async function addEntretien(type){ if(needAdmin())return; const c=curCollab(); const {error}=await sb.from('pp_entretiens').insert({collaborator_id:c.id,type,date:todayISO(),by:ME.full_name||'',answers:{}}); if(error)return toast('⚠ '+error.message,'err'); await audit('entretien',c.id,'Entretien ajouté',type==='essai'?'Période d’essai':'Suivi employé'); reloadAndRender(); }
+async function delEntretien(id){ if(needAdmin())return; const c=curCollab(); await sb.from('pp_entretiens').delete().eq('id',id); await audit('entretien',c.id,'Entretien supprimé',''); reloadAndRender(); }
+async function setEntretien(id,k,v){ if(needAdmin())return; const c=curCollab(); const col=k==='by'?'by':'date'; await sb.from('pp_entretiens').update({[col]:v,updated_at:nowISO()}).eq('id',id); }
+async function setEntretienAns(id,qid,v){ if(needAdmin())return; const c=curCollab(); let e=null; [...c.passport.suiviEssai,...c.passport.suiviEmp].forEach(x=>{if(x.id===id)e=x;}); if(!e)return; e.answers=e.answers||{}; e.answers[qid]=v; await sb.from('pp_entretiens').update({answers:e.answers,updated_at:nowISO()}).eq('id',id); await audit('entretien',c.id,'Entretien modifié',''); }
+
+/* ===================== SIGNATURES ===================== */
+let signCtx=null;
+function openSign(kind,id,role){
+  const c=curCollab();
+  const who=role==='manager'?(ME.full_name||''):(c.firstName+' '+c.lastName);
+  const roleLabel=role==='manager'?'Évaluateur (manager)':'Collaborateur';
+  modal.innerHTML=`<h3>Signature — ${roleLabel}</h3><p class="mhint">Signez dans le cadre ci-dessous. La date et l’heure sont enregistrées automatiquement.</p>
+    <div class="field"><label>Nom du signataire</label><input id="signName" value="${esc(who)}"></div>
+    <div class="signpad-wrap"><canvas id="signPad"></canvas></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><button class="tiny-btn" onclick="clearSign()">↺ Effacer</button><span style="font-size:11.5px;color:var(--muted)">🕓 ${frDateTime(nowISO())}</span></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn" onclick="saveSign('${kind}','${id}','${role}')">Valider la signature</button></div>`;
+  overlay.classList.add('show'); setTimeout(()=>initSignPad(),60);
+}
+function initSignPad(){
+  const cv=document.getElementById('signPad'); if(!cv)return;
+  const rect=cv.getBoundingClientRect(); cv.width=rect.width*2; cv.height=180*2; const ctx=cv.getContext('2d'); ctx.scale(2,2); ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1b1d1a';
+  let drawing=false,last=null,dirty=false;
+  function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
+  function start(e){ drawing=true; last=pos(e); e.preventDefault(); }
+  function move(e){ if(!drawing)return; const q=pos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(q.x,q.y); ctx.stroke(); last=q; dirty=true; e.preventDefault(); }
+  function end(){ drawing=false; }
+  cv.addEventListener('mousedown',start); cv.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
+  cv.addEventListener('touchstart',start,{passive:false}); cv.addEventListener('touchmove',move,{passive:false}); cv.addEventListener('touchend',end);
+  signCtx={cv,ctx,isDirty:()=>dirty,reset:()=>{ctx.clearRect(0,0,cv.width,cv.height);dirty=false;}};
+}
+function clearSign(){ if(signCtx)signCtx.reset(); }
+async function saveSign(kind,id,role){
+  if(!signCtx||!signCtx.isDirty()){ toast('✍️ Merci de signer dans le cadre','err'); return; }
+  const name=document.getElementById('signName').value.trim();
+  const png=signCtx.cv.toDataURL('image/png');
+  const c=curCollab(),ts=nowISO();
+  const table=kind==='session'?'pp_ead_sessions':'pp_entretiens';
+  const upd=role==='manager'?{manager_sign:png,manager_sign_name:name,manager_signed_at:ts}:{collab_sign:png,collab_sign_name:name,collab_signed_at:ts};
+  const {error}=await sb.from(table).update(upd).eq('id',id); if(error)return toast('⚠ '+error.message,'err');
+  await audit(kind==='session'?'ead_session':'entretien',c.id,'Signature '+(role==='manager'?'manager':'collaborateur'),name);
+  closeModal(); toast('✍️ Signature enregistrée'); reloadAndRender();
+}
+
+/* ===================== RÉFÉRENTIEL : EXPORT / IMPORT ===================== */
+function modalRef(){
+  if(needAdmin())return;
+  const counts=`${REF.postes.reduce((s,p)=>s+p.comps.length,0)} questions de poste · ${REF.eadComps.length} EAD · ${REF.materiel.length} machines · ${REF.elearning.length} e-learning · ${REF.reglementaire.length} réglementaires · ${REF.suiviEssai.length+REF.suiviEmp.length} questions d’entretien`;
+  modal.innerHTML=`<h3>📝 Référentiel des questions</h3><p class="mhint">Modifiez tout le contenu du passeport (les questions) sans toucher au code, via un fichier Excel.</p>
+    <div class="ref-steps">
+      <b>1.</b> Cliquez sur <b>Exporter</b> : vous obtenez un fichier Excel avec un onglet par section.<br>
+      <b>2.</b> Modifiez-le (reformuler, ajouter une ligne, supprimer une ligne). <b>Ne touchez pas à la colonne « ID »</b> des lignes existantes ; laissez l’ID vide pour une nouvelle question.<br>
+      <b>3.</b> Cliquez sur <b>Importer</b> et choisissez votre fichier : la mise à jour est appliquée pour tout le monde, en temps réel.
+    </div>
+    <div style="background:#f7f9f4;border-radius:10px;padding:11px 13px;font-size:12px;color:var(--ink-soft);margin-top:14px">Contenu actuel : ${counts}</div>
+    <div class="modal-actions"><button class="btn ghost" onclick="exportRef()">⬇ Exporter (Excel)</button><button class="btn" onclick="document.getElementById('refFile').click()">⬆ Importer (Excel)</button></div>
+    <div style="text-align:center;margin-top:12px"><button class="tiny-btn" onclick="resetRef()" style="color:#c9401f">↺ Réinitialiser au référentiel d’origine</button></div>`;
+  overlay.classList.add('show');
+}
+function exportRef(){
+  try{
+    const wb=XLSX.utils.book_new();
+    const add=(name,aoa)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),name);
+    add('EAD Stades',[['ID','Ordre','Emoji','Nom du stade','Objectif','Ancienneté requise'],...REF.eadStages.map((s,i)=>[s.id,i+1,s.emo,s.name,s.obj,s.sen])]);
+    add('EAD Compétences',[['ID','Stade','Catégorie','Question'],...REF.eadComps.map(c=>[c.id,c.stage,(EAD_CATS[c.cat]||EAD_CATS.AUTRE).n,c.label])]);
+    const pr=[['ID','Poste','Emoji','Sous-titre','Question','Aide']]; REF.postes.forEach(po=>po.comps.forEach(c=>pr.push([c.id,po.nom,po.emo,po.sub,c.label,c.help]))); add('Postes',pr);
+    const mr=[['ID','Machine','Emoji','Point de contrôle']]; REF.materiel.forEach(m=>m.comps.forEach(c=>mr.push([c.id,m.nom,m.emo,c.label]))); add('Matériel',mr);
+    add('E-Learning',[['ID','Module','Description','Durée'],...REF.elearning.map(e=>[e.id,e.title,e.desc,e.duree])]);
+    add('Réglementaire',[['ID','Formation','Détail','Emoji'],...REF.reglementaire.map(r=>[r.id,r.title,r.detail,r.emo])]);
+    add('Entretien essai',[['ID','Question'],...REF.suiviEssai.map(q=>[q.id,q.q])]);
+    add('Entretien suivi',[['ID','Question'],...REF.suiviEmp.map(q=>[q.id,q.q])]);
+    XLSX.writeFile(wb,'referentiel-passeport-saladco.xlsx');
+    toast('⬇ Référentiel exporté');
+  }catch(e){ toast('⚠ Export impossible : '+e.message,'err'); }
+}
+function newId(pfx){ return pfx+'_'+uid(); }
+async function importRef(ev){
+  const file=ev.target.files[0]; if(!file){return;} ev.target.value='';
+  if(needAdmin())return;
+  try{
+    const buf=await file.arrayBuffer(); const wb=XLSX.read(buf,{type:'array'});
+    const rows=(name)=>{ const ws=wb.Sheets[name]; if(!ws)return null; return XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false}).slice(1); };
+    const S=(v)=>v==null?'':String(v).trim();
+    const nr={version:1};
+    // EAD Stades
+    let r=rows('EAD Stades');
+    nr.eadStages = r? r.filter(x=>S(x[3])).map((x,i)=>({id:S(x[0])||newId('st'),emo:S(x[2])||'🌱',name:S(x[3]),obj:S(x[4]),sen:S(x[5])})) : REF.eadStages;
+    if(!nr.eadStages.length) nr.eadStages=REF.eadStages;
+    // EAD Compétences
+    r=rows('EAD Compétences')||rows('EAD Competences');
+    nr.eadComps = r? r.filter(x=>S(x[3])).map(x=>{ const catName=S(x[2]).toLowerCase(); const cat=CAT_BY_NAME[catName]||(EAD_CATS[S(x[2]).toUpperCase()]?S(x[2]).toUpperCase():'AUTRE'); let stg=parseInt(x[1],10); if(!stg||stg<1)stg=1; if(stg>nr.eadStages.length)stg=nr.eadStages.length; return {id:S(x[0])||newId('ec'),label:S(x[3]),cat,stage:stg}; }) : REF.eadComps;
+    // Postes (regrouper par nom de poste)
+    r=rows('Postes');
+    if(r){ const byName={}; const order=[];
+      r.filter(x=>S(x[4])).forEach(x=>{ const nom=S(x[1])||'Poste'; if(!byName[nom]){ byName[nom]={nom,emo:S(x[2])||'📋',sub:S(x[3]),comps:[]}; order.push(nom); } byName[nom].comps.push({id:S(x[0])||newId('pc'),label:S(x[4]),help:S(x[5])}); });
+      nr.postes = order.map(nom=>{ const ex=REF.postes.find(p=>p.nom===nom); return {id:ex?ex.id:('poste_'+uid()),nom:byName[nom].nom,emo:byName[nom].emo,sub:byName[nom].sub,comps:byName[nom].comps}; });
+    } else nr.postes=REF.postes;
+    if(!nr.postes.length) nr.postes=REF.postes;
+    // Matériel
+    r=rows('Matériel')||rows('Materiel');
+    if(r){ const byName={}; const order=[];
+      r.filter(x=>S(x[3])).forEach(x=>{ const nom=S(x[1])||'Machine'; if(!byName[nom]){ byName[nom]={nom,emo:S(x[2])||'⚙️',comps:[]}; order.push(nom); } byName[nom].comps.push({id:S(x[0])||newId('mc'),label:S(x[3])}); });
+      nr.materiel = order.map(nom=>{ const ex=REF.materiel.find(m=>m.nom===nom); return {id:ex?ex.id:('mat_'+uid()),nom:byName[nom].nom,emo:byName[nom].emo,comps:byName[nom].comps}; });
+    } else nr.materiel=REF.materiel;
+    if(!nr.materiel.length) nr.materiel=REF.materiel;
+    // E-Learning
+    r=rows('E-Learning');
+    nr.elearning = r? r.filter(x=>S(x[1])).map(x=>({id:S(x[0])||newId('el'),title:S(x[1]),desc:S(x[2]),duree:S(x[3])})) : REF.elearning;
+    if(!nr.elearning.length) nr.elearning=REF.elearning;
+    // Réglementaire
+    r=rows('Réglementaire')||rows('Reglementaire');
+    nr.reglementaire = r? r.filter(x=>S(x[1])).map(x=>({id:S(x[0])||newId('rg'),title:S(x[1]),detail:S(x[2]),emo:S(x[3])||'📋'})) : REF.reglementaire;
+    if(!nr.reglementaire.length) nr.reglementaire=REF.reglementaire;
+    // Entretiens
+    r=rows('Entretien essai');
+    nr.suiviEssai = r? r.filter(x=>S(x[1])).map(x=>({id:S(x[0])||newId('se'),q:S(x[1])})) : REF.suiviEssai;
+    if(!nr.suiviEssai.length) nr.suiviEssai=REF.suiviEssai;
+    r=rows('Entretien suivi');
+    nr.suiviEmp = r? r.filter(x=>S(x[1])).map(x=>({id:S(x[0])||newId('sm'),q:S(x[1])})) : REF.suiviEmp;
+    if(!nr.suiviEmp.length) nr.suiviEmp=REF.suiviEmp;
+
+    const {error}=await sb.from('pp_config').upsert({id:'main',data:nr,updated_by:ME.id,updated_at:nowISO()});
+    if(error)return toast('⚠ '+error.message,'err');
+    await audit('referentiel',null,'Référentiel importé','Mise à jour de la liste des questions');
+    REF=normalizeRef(nr);
+    closeModal(); toast('✅ Référentiel mis à jour pour tout le monde','gold'); await loadAll(); render();
+  }catch(e){ toast('⚠ Import impossible : '+e.message,'err'); }
+}
+function resetRef(){ confirmModalGeneric('Réinitialiser le référentiel ?','La liste des questions reviendra à la version d’origine Salad&Co. La progression déjà saisie reste conservée.', 'Réinitialiser', async()=>{ const def=buildDefaultRef(); const {error}=await sb.from('pp_config').upsert({id:'main',data:def,updated_by:ME.id,updated_at:nowISO()}); if(error)return toast('⚠ '+error.message,'err'); await audit('referentiel',null,'Référentiel réinitialisé',''); REF=def; closeModal(); toast('↺ Référentiel réinitialisé'); await loadAll(); render(); }); }
+
+/* ===================== MODALS ===================== */
+const overlay=document.getElementById('overlay'),modal=document.getElementById('modal');
+function closeModal(){ overlay.classList.remove('show'); modal.innerHTML=''; signCtx=null; }
+function modalResto(){ if(needAdmin())return; modal.innerHTML=`<h3>Nouveau restaurant</h3><p class="mhint">Créez un point de vente pour y rattacher vos collaborateurs.</p><div class="field"><label>Nom</label><input id="rname" placeholder="Ex. Salad&Co Lille Centre"></div><div class="field"><label>Ville (optionnel)</label><input id="rcity" placeholder="Ex. Lille"></div><div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn" onclick="createResto()">Créer</button></div>`; overlay.classList.add('show'); setTimeout(()=>document.getElementById('rname').focus(),50); }
+function modalCollab(rid){ if(needAdmin())return; modal.innerHTML=`<h3>Nouveau collaborateur</h3><p class="mhint">Un passeport vierge sera créé automatiquement.</p><div class="row2"><div class="field"><label>Prénom</label><input id="cf" placeholder="Prénom"></div><div class="field"><label>Nom</label><input id="cl" placeholder="Nom"></div></div><div class="field"><label>Poste / fonction</label><input id="cr" placeholder="Ex. Équipier polyvalent"></div><div class="field"><label>Date d’entrée</label><input id="cd" type="date" value="${todayISO()}"></div><div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn" onclick="createCollab('${rid}')">Créer le passeport</button></div>`; overlay.classList.add('show'); setTimeout(()=>document.getElementById('cf').focus(),50); }
+function confirmModal(title,html,onOk){ modal.innerHTML=`<h3>${title}</h3><p class="mhint">${html}</p><div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn danger" id="cfok">Supprimer</button></div>`; overlay.classList.add('show'); document.getElementById('cfok').onclick=()=>{closeModal();onOk();}; }
+function confirmModalGeneric(title,html,okLabel,onOk){ modal.innerHTML=`<h3>${title}</h3><p class="mhint">${html}</p><div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn" id="cfok2">${esc(okLabel)}</button></div>`; overlay.classList.add('show'); document.getElementById('cfok2').onclick=()=>{onOk();}; }
+function modalAccount(){ modal.innerHTML=`<h3>Mon compte</h3><p class="mhint">${esc(ME.email)} · ${isAdmin()?'Administrateur':'Directeur invité'}</p><div class="field"><label>Nouveau mot de passe</label><input id="npw" type="password" placeholder="Laisser vide pour ne pas changer"></div><div class="modal-actions"><button class="btn ghost" onclick="logout()">Se déconnecter</button><button class="btn" onclick="changePw()">Enregistrer</button></div>`; overlay.classList.add('show'); }
+async function changePw(){ const v=document.getElementById('npw').value; if(!v){closeModal();return;} if(v.length<6)return toast('Mot de passe trop court (min 6)','err'); const {error}=await sb.auth.updateUser({password:v}); if(error)return toast('⚠ '+error.message,'err'); closeModal(); toast('🔑 Mot de passe mis à jour'); }
+async function logout(){ await sb.auth.signOut(); location.reload(); }
+async function modalShare(){
+  if(needAdmin())return;
+  modal.innerHTML=`<h3>Accès & directeurs</h3><p class="mhint">Partagez le lien et invitez d’autres directeurs. Les directeurs invités ont des droits réduits : gestion des évaluations EAD (consultation du reste).</p>
+    <div class="field"><label>Lien de la plateforme</label><div class="mono" id="shareUrl">${esc(location.href.split('#')[0])}</div><button class="btn ghost small" style="margin-top:8px" onclick="copyShare()">📋 Copier le lien</button></div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:18px 0"><h3 style="font-size:16px">Inviter un directeur</h3>
+    <div class="row2"><div class="field"><label>Nom</label><input id="ivn" placeholder="Nom"></div><div class="field"><label>Rôle</label><select id="ivr"><option value="invite">Directeur invité (droits réduits)</option><option value="admin">Administrateur (tous droits)</option></select></div></div>
+    <div class="field"><label>Email</label><input id="ive" type="email" placeholder="directeur@saladandco.fr"></div>
+    <div class="field"><label>Mot de passe provisoire</label><input id="ivp" value="SaladCo-${Math.floor(1000+Math.random()*9000)}"><div style="font-size:11.5px;color:var(--muted);margin-top:6px">Si la personne a déjà un compte Salad&Co, elle se connecte avec son mot de passe habituel — le mot de passe provisoire est ignoré.</div></div>
+    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Fermer</button><button class="btn" onclick="inviteDirector()">Créer l’accès</button></div>
+    <div id="usersList" style="margin-top:18px"></div>`;
+  overlay.classList.add('show'); loadUsers();
+}
+function copyShare(){ navigator.clipboard.writeText(location.href.split('#')[0]).then(()=>toast('📋 Lien copié')); }
+async function callFn(action,payload){ const {data:{session}}=await sb.auth.getSession(); const res=await fetch(SUPA_URL+'/functions/v1/pp-users',{method:'POST',headers:{'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+(session?session.access_token:SUPA_KEY)},body:JSON.stringify({action,...payload})}); return res.json(); }
+async function inviteDirector(){ const email=document.getElementById('ive').value.trim(),full_name=document.getElementById('ivn').value.trim(),role=document.getElementById('ivr').value,password=document.getElementById('ivp').value.trim(); if(!email)return toast('Email requis','err'); const r=await callFn('invite',{email,password,full_name,role}); if(r.error)return toast('⚠ '+r.error,'err'); toast(r.existing?'✅ Accès accordé — la personne se connecte avec son mot de passe Salad&Co habituel':'✅ Accès créé — communiquez-lui l’email + le mot de passe provisoire','gold'); document.getElementById('ive').value=''; loadUsers(); }
+async function loadUsers(){ const r=await callFn('list',{}); const el=document.getElementById('usersList'); if(!el)return; if(r.error){el.innerHTML='<p class="phint">'+esc(r.error)+'</p>';return;} el.innerHTML=`<h3 style="font-size:15px;margin-bottom:8px">Directeurs ayant accès</h3>`+(r.users||[]).map(u=>`<div class="sess-row"><div class="sess-main"><div class="sess-top"><b>${esc(u.full_name||u.email)}</b> <span class="role-pill ${u.role==='admin'?'admin':'invite'}">${u.role==='admin'?'Admin':'Invité'}</span></div><div class="sess-meta">${esc(u.email)}</div></div><div class="sess-acts"><button class="tiny-btn" title="Réinitialiser le mot de passe" onclick="resetUserPw('${u.id}','${esc(u.full_name||u.email)}')">🔑</button>${u.id!==ME.id?`<button class="tiny-btn danger" onclick="delUser('${u.id}','${esc(u.full_name||u.email)}')">🗑</button>`:'<span style="font-size:11px;color:var(--muted)">vous</span>'}</div></div>`).join(''); }
+async function delUser(id,name){ if(!confirm('Retirer l’accès de '+name+' ?'))return; const r=await callFn('delete',{user_id:id}); if(r.error)return toast('⚠ '+r.error,'err'); toast('Accès retiré'); loadUsers(); }
+function resetUserPw(id,name){ const pw='SaladCo-'+Math.floor(1000+Math.random()*9000); modal.innerHTML=`<h3>Réinitialiser le mot de passe</h3><p class="mhint">Nouveau mot de passe provisoire pour <b>${esc(name)}</b>.</p><div style="background:#fbf6e8;border:1px solid #f0e2b8;border-radius:10px;padding:10px 12px;font-size:12px;color:var(--ink-soft);margin-bottom:12px">⚠️ Si cette personne utilise le même compte pour d’autres outils Salad&Co, ce mot de passe changera aussi pour ces outils.</div><div class="field"><label>Nouveau mot de passe</label><input id="rupw" value="${pw}"></div><div class="modal-actions"><button class="btn ghost" onclick="modalShare()">Annuler</button><button class="btn" onclick="doResetUserPw('${id}','${esc(name)}')">Réinitialiser</button></div>`; overlay.classList.add('show'); }
+async function doResetUserPw(id,name){ const pw=document.getElementById('rupw').value.trim(); if(pw.length<6)return toast('Min 6 caractères','err'); const r=await callFn('reset_password',{user_id:id,password:pw}); if(r.error)return toast('⚠ '+r.error,'err'); modal.innerHTML=`<h3>✅ Mot de passe réinitialisé</h3><p class="mhint">Communiquez ce mot de passe à <b>${esc(name)}</b> :</p><div class="mono">${esc(pw)}</div><p class="phint" style="margin-top:10px">La personne pourra le modifier via l’icône ⚙ après connexion.</p><div class="modal-actions"><button class="btn" onclick="modalShare()">Retour</button></div>`; }
+
+/* ===================== TOAST ===================== */
+function toast(msg,cls=''){ const z=document.getElementById('toasts'),t=document.createElement('div'); t.className='toast '+cls; t.innerHTML=msg; z.appendChild(t); setTimeout(()=>{t.style.transition='.3s';t.style.opacity='0';t.style.transform='translateY(10px)';setTimeout(()=>t.remove(),300);},2800); }
+
+/* ===================== AUTH ===================== */
+const authView=document.getElementById('authView'),mainApp=document.getElementById('mainApp'),boot=document.getElementById('boot');
+function showAuthErr(m){ const e=document.getElementById('authErr'); e.textContent=m; e.classList.add('show'); }
+function clearAuthErr(){ document.getElementById('authErr').classList.remove('show'); }
+async function renderAuth(){
+  boot.style.display='none'; mainApp.style.display='none'; authView.style.display='flex';
+  const {data}=await sb.rpc('pp_admin_exists');
+  const adminExists=data===true;
+  const f=document.getElementById('authFields');
+  if(!adminExists){
+    document.getElementById('authTitle').textContent='Bienvenue';
+    document.getElementById('authSub').textContent='Créez le compte administrateur de la plateforme';
+    f.innerHTML=`<div class="field"><label>Votre nom</label><input id="bn" placeholder="Prénom Nom"></div><div class="field"><label>Email</label><input id="be" type="email" value="bastien.goudemand@saladandco.fr"></div><div class="field"><label>Mot de passe</label><input id="bp" type="password" placeholder="Min. 6 caractères"></div><button class="btn" style="width:100%;justify-content:center" onclick="doBootstrap()">Créer mon compte administrateur</button>`;
+  } else {
+    document.getElementById('authTitle').textContent='Connexion';
+    document.getElementById('authSub').textContent='Salad&Co — Passeport Collaborateur';
+    f.innerHTML=`<div class="field"><label>Email</label><input id="le" type="email" placeholder="vous@saladandco.fr"></div><div class="field"><label>Mot de passe</label><input id="lp" type="password" placeholder="Mot de passe"></div><button class="btn" style="width:100%;justify-content:center" onclick="doLogin()">Se connecter</button><div style="text-align:center;margin-top:14px"><a onclick="forgotPw()" style="font-size:12.5px;color:var(--muted);cursor:pointer;text-decoration:underline">Mot de passe oublié ?</a></div>`;
+    setTimeout(()=>{const el=document.getElementById('le');if(el)el.focus();},50);
+  }
+}
+async function doBootstrap(){ clearAuthErr(); const full_name=document.getElementById('bn').value.trim(),email=document.getElementById('be').value.trim(),password=document.getElementById('bp').value; if(!email||password.length<6)return showAuthErr('Email valide et mot de passe (min 6) requis.'); const r=await callFn('bootstrap',{email,password,full_name}); if(r.error)return showAuthErr(r.error); const {error}=await sb.auth.signInWithPassword({email,password}); if(error)return showAuthErr(error.message); await afterLogin(); }
+async function doLogin(){ clearAuthErr(); const email=document.getElementById('le').value.trim(),password=document.getElementById('lp').value; const {error}=await sb.auth.signInWithPassword({email,password}); if(error)return showAuthErr('Identifiants incorrects.'); await afterLogin(); }
+async function forgotPw(){ clearAuthErr(); const el=document.getElementById('le'); const email=(el&&el.value.trim())||''; if(!email)return showAuthErr('Saisissez d’abord votre email ci-dessus, puis cliquez sur « Mot de passe oublié ? ».'); const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin}); if(error)return showAuthErr(error.message); toast('📧 Si un compte existe pour cet email, un lien de réinitialisation vient d’être envoyé (pensez aux indésirables).','gold'); }
+let recovering=false;
+function showSetNewPw(){ recovering=true; document.getElementById('boot').style.display='none'; authView.style.display='none'; mainApp.style.display='none'; modal.innerHTML=`<h3>Nouveau mot de passe</h3><p class="mhint">Choisissez votre nouveau mot de passe pour accéder à la plateforme.</p><div class="field"><label>Nouveau mot de passe</label><input id="rpw" type="password" placeholder="Min. 6 caractères"></div><div class="modal-actions"><button class="btn" style="flex:1;justify-content:center" onclick="applyNewPw()">Enregistrer et continuer</button></div>`; overlay.classList.add('show'); setTimeout(()=>{const el=document.getElementById('rpw');if(el)el.focus();},60); }
+async function applyNewPw(){ const v=document.getElementById('rpw').value; if(!v||v.length<6)return toast('Mot de passe trop court (min 6)','err'); const {error}=await sb.auth.updateUser({password:v}); if(error)return toast('⚠ '+error.message,'err'); closeModal(); recovering=false; toast('🔑 Mot de passe mis à jour'); await afterLogin(); }
+async function afterLogin(){
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user){ return renderAuth(); }
+  let {data:prof}=await sb.from('pp_profiles').select('*').eq('id',user.id).maybeSingle();
+  if(!prof){ showAuthErr('Profil introuvable. Contactez l’administrateur.'); await sb.auth.signOut(); return; }
+  ME=prof;
+  authView.style.display='none'; boot.style.display='flex';
+  await loadRef(); await loadAll();
+  if(isAdmin() && STORE.restaurants.length===0 && !window.__seeding){ window.__seeding=true; boot.innerHTML='<div class="spin"></div> Initialisation des données…'; try{ await seedDB(); }catch(e){} await loadAll(); }
+  boot.style.display='none'; mainApp.style.display='block';
+  subscribeRealtime(); render();
+}
+let realtimeSubscribed=false;
+function subscribeRealtime(){
+  if(realtimeSubscribed)return; realtimeSubscribed=true;
+  ['pp_restaurants','pp_collaborators','pp_ead_progress','pp_ead_sessions','pp_entretiens','pp_audit_log','pp_config'].forEach(tb=>{
+    try{ sb.channel('rt_'+tb).on('postgres_changes',{event:'*',schema:'public',table:tb},scheduleReload).subscribe(); }catch(e){}
+  });
+}
+
+/* ===================== SEED DÉMO ===================== */
+async function seedDB(){
+  const names=['Salad&Co Lille Centre',...DEFAULT_RESTOS];
+  const {data:rows}=await sb.from('pp_restaurants').insert(names.map(n=>({name:n,city:'',created_by:ME.id}))).select();
+  const idOf=n=>rows.find(r=>r.name===n).id;
+  async function mk(resto,f,l,role,entry,eadStage,posteIds,session){
+    const pp=operationalTemplate();
+    (posteIds||[]).forEach(pid=>{ const po=REF.postes.find(x=>x.id===pid); if(po){ pp.postes[pid]={comps:{},eval:''}; po.comps.forEach(c=>pp.postes[pid].comps[c.id]={done:true,date:entry}); } });
+    REF.elearning.forEach(e=>pp.elearning[e.id]=true);
+    const {data:cc}=await sb.from('pp_collaborators').insert({restaurant_id:idOf(resto),first_name:f,last_name:l,role,entry_date:entry,passport:pp}).select().single();
+    if(eadStage){ const rws=REF.eadComps.filter(c=>c.stage<=eadStage).map(c=>({collaborator_id:cc.id,comp_id:c.id,done:true,done_at:entry})); if(rws.length)await sb.from('pp_ead_progress').insert(rws); }
+    if(session)await sb.from('pp_ead_sessions').insert({collaborator_id:cc.id,...session});
+    return cc.id;
+  }
+  const closeF=(()=>{const d=new Date();d.setDate(d.getDate()+14);return d.toISOString().slice(0,10);})();
+  await mk('Salad&Co Lille Centre','Léa','Martin','Équipière polyvalente','2025-09-15',2,['atelier_fraicheur','dessert','bar'],{label:'Évaluation EAD 2025',open_date:'2025-11-02',close_date:'2025-11-16',status:'cloturee',evaluator:'Alice Delobel',notes:'Belle progression, passage au stade « La pousse ».',start_stage:1,end_stage:2,closed_at:'2025-11-16'});
+  await mk('Salad&Co Lille Centre','Karim','Benali','Équipier','2026-06-01',1,['plancha'],{label:'Évaluation EAD 2026',open_date:todayISO(),close_date:closeF,status:'ouverte',evaluator:'Alice Delobel',start_stage:1});
+  await mk('Héron','Chloé','Faure','Équipière polyvalente','2024-05-02',3,['atelier_fraicheur','salle','bar','dessert'],null);
+  await mk('Héron','Marc','Lemoine','Adjoint','2021-09-15',4,['atelier_fraicheur','plancha','caisse','salle','bar'],null);
+  await mk('Mérignac','Théo','Garcia','Équipier polyvalent','2023-03-08',3,['plancha','caisse','reception'],null);
+}
+
+/* ===================== INIT ===================== */
+sb.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ showSetNewPw(); } });
+(async function init(){
+  if((location.hash||'').includes('type=recovery')){ return; } // l'événement PASSWORD_RECOVERY affichera le formulaire
+  const {data:{session}}=await sb.auth.getSession();
+  if(recovering) return;
+  if(session){ await afterLogin(); } else { renderAuth(); }
+})();
+</script>
+</body>
+</html>
