@@ -136,6 +136,13 @@
   td.mcell.we-col{background:#f7f8f8}
   .mcode{display:inline-block;min-width:22px;padding:2px 3px;border-radius:5px;font-size:11px;font-weight:700}
   .evdot{display:inline-block;background:#fff4d6;color:#8a6d1e;border:1px solid #f0e0a8;border-radius:50%;width:18px;height:18px;line-height:16px;font-size:11px;font-weight:700}
+  .alerts{padding:6px 16px 0}
+  .alerts-h{font-weight:800;color:#b45309;padding:8px 2px 6px;font-size:13px}
+  .alerts ul{list-style:none;margin:0;padding:0}
+  .alerts li{background:#fff7ed;border:1px solid #fed7aa;border-left:4px solid #f59e0b;border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:13px;color:#7c4a03}
+  .alerts li b{color:#7c2d12}
+  .alerts li.wend{border-left-color:#e11d48;background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+  .recap td.wknd{background:#fbfcfb}
   .viewnav{display:flex;gap:6px}
   .vbtn{background:rgba(255,255,255,.16);color:#fff;padding:8px 14px;border-radius:9px;font-weight:600}
   .vbtn.on{background:#fff;color:var(--green-d)}
@@ -210,6 +217,7 @@
         <button class="btn-ghost" id="todayW">Aujourd'hui</button>
       </div>
     </div>
+    <div id="alertsBox" class="alerts" style="display:none"></div>
     <div class="card-b" id="gridBox"><div class="empty">Chargement…</div></div>
     <div class="legend" id="legend"></div>
   </div>
@@ -368,7 +376,50 @@ async function rpc(fn,body){
 let restaurants=[], dayCodes=[], codeByCat={}, allEmp={};
 let cur={ rid:null, employees:[], shifts:{}, events:{}, monday:null, editRid:null, editCode:null, admin:false, adminCode:null };
 let detailMode="week";
-function render(){ if(detailMode==="month") renderMonth(); else renderGrid(); }
+function render(){ if(detailMode==="month") renderMonth(); else renderGrid(); renderAlerts(); }
+function fD(x){ const d = (typeof x==="string")? new Date(x+"T00:00:00Z") : x; return fmtFR(d); }
+function renderAlerts(){
+  const box=document.getElementById("alertsBox"); if(!box) return;
+  const today=iso(new Date()); const items=[];
+  cur.employees.forEach(e=>{
+    const pref=e.id+"|";
+    const dates=Object.keys(cur.shifts).filter(k=>k.indexOf(pref)===0).map(k=>k.slice(pref.length)).sort();
+    if(!dates.length) return;
+    // 1) jours travaillés consécutifs > 7 (ongoing/futur)
+    let runLen=0, runStart=null, prevWork=null, best=null;
+    dates.forEach(d=>{
+      const code=cur.shifts[pref+d].code;
+      if(isWork(code)){
+        if(prevWork && dDiff(prevWork,d)===1) runLen++; else { runLen=1; runStart=d; }
+        prevWork=d;
+        if(runLen>7 && d>=today && (!best || runLen>best.len)) best={start:runStart,end:d,len:runLen};
+      } else { runLen=0; prevWork=null; runStart=null; }
+    });
+    if(best) items.push({name:e.name, kind:"streak", start:best.start, end:best.end, len:best.len});
+    // 2) pas de week-end complet (Sam+Dim en R/CP/JRS) sur 4 semaines
+    const maxD=dates[dates.length-1];
+    let scan=addDays(mondayOf(new Date()),-28);
+    const wd=(scan.getUTCDay()+6)%7; scan=addDays(scan,(5-wd+7)%7); // premier samedi
+    let bad=0, gapStart=null, wkAlert=null;
+    for(let sat=scan; iso(sat)<=maxD; sat=addDays(sat,7)){
+      const cs=cur.shifts[pref+iso(sat)], csu=cur.shifts[pref+iso(addDays(sat,1))];
+      if(!cs&&!csu) continue; // week-end sans données → ignoré
+      const good = cs&&csu&&isWeekendRest(cs.code)&&isWeekendRest(csu.code);
+      if(good){ bad=0; gapStart=null; }
+      else { if(bad===0) gapStart=sat; bad++;
+        if(bad>=4 && iso(sat)>=today){ wkAlert={from:gapStart}; break; } }
+    }
+    if(wkAlert) items.push({name:e.name, kind:"weekend", from:wkAlert.from});
+  });
+  if(!items.length){ box.style.display="none"; box.innerHTML=""; return; }
+  box.style.display="";
+  let h='<div class="alerts-h">⚠️ Alertes — '+esc((restaurants.find(r=>r.id===cur.rid)||{}).name||"")+'</div><ul>';
+  items.forEach(a=>{
+    if(a.kind==="streak") h+='<li><b>'+esc(a.name)+'</b> : '+a.len+' jours travaillés d\'affilée ('+fD(a.start)+' → '+fD(a.end)+') — maximum conseillé 7.</li>';
+    else h+='<li class="wend"><b>'+esc(a.name)+'</b> : pas de week-end complet en repos (Sam.+Dim.) depuis le '+fD(a.from)+' — plus de 4 semaines.</li>';
+  });
+  h+='</ul>'; box.innerHTML=h;
+}
 function editable(){ return cur.admin || cur.editRid===cur.rid; }
 function activeCode(){ return cur.admin ? cur.adminCode : cur.editCode; }
 let recapPeriod="month";
@@ -413,6 +464,12 @@ function classify(raw){
   if(n.startsWith("R")) return {cat:"R",color:CATCOLOR.R};
   return {cat:"AUT",color:CATCOLOR.AUT};
 }
+
+// ---- règles / alertes ----
+function isWork(code){ const c=classify(code); if(c.cat==="O"||c.cat==="F"||c.cat==="G") return true;
+  const n=(code||"").toUpperCase(); return n.includes("FOR")||n.includes("INV"); }
+function isWeekendRest(code){ const c=classify(code); return c.cat==="R"||c.cat==="CP"||c.cat==="JRS"; }
+function dDiff(a,b){ return Math.round((new Date(b+"T00:00:00Z")-new Date(a+"T00:00:00Z"))/864e5); }
 
 // ---- date helpers ----
 function iso(d){ return d.toISOString().slice(0,10); }
@@ -706,13 +763,21 @@ function renderRecap(){
   const [from,to,lbl]=periodRange();
   const box=document.getElementById("recapBox");
   const cols=CATS;
-  const totals={}; cur.employees.forEach(e=>{ totals[e.id]={}; cols.forEach(c=>totals[e.id][c.key]=0); });
+  const totals={}, wk={}; cur.employees.forEach(e=>{ totals[e.id]={}; cols.forEach(c=>totals[e.id][c.key]=0); wk[e.id]=0; });
   Object.keys(cur.shifts).forEach(k=>{
     const [eid,date]=k.split("|"); if(date<from||date>to) return; if(!totals[eid]) return;
-    const cat=classify(cur.shifts[k].code).cat; if(cat&&totals[eid][cat]!=null) totals[eid][cat]++;
+    const code=cur.shifts[k].code; const cat=classify(code).cat; if(cat&&totals[eid][cat]!=null) totals[eid][cat]++;
+    const wd=(new Date(date+"T00:00:00Z").getUTCDay()+6)%7;
+    // Week-end complet en repos : le samedi ET le dimanche du même week-end en R/CP/JRS
+    if(wd===5&&isWeekendRest(code)){
+      const d=new Date(date+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+1);
+      const sun=d.toISOString().slice(0,10); const su=cur.shifts[eid+"|"+sun];
+      if(su&&isWeekendRest(su.code)) wk[eid]++;
+    }
   });
   let h='<table><thead><tr><th style="text-align:left;padding-left:12px">Collaborateur</th>';
   cols.forEach(c=>h+='<th title="'+c.label+'"><span class="pill" style="background:'+CATCOLOR[c.key]+';color:'+txtOn(CATCOLOR[c.key])+'">'+c.key+'</span></th>');
+  h+='<th title="Week-ends complets en repos (samedi ET dimanche en R/CP/JRS la même semaine)">W-E<br><span class="muted" style="font-weight:600;font-size:10px">repos</span></th>';
   h+='<th>Total jours</th></tr></thead><tbody>';
   const grand={}; cols.forEach(c=>grand[c.key]=0); let gTot=0;
   cur.employees.forEach(e=>{
@@ -721,13 +786,17 @@ function renderRecap(){
     cols.forEach(c=>{ const v=totals[e.id][c.key]; grand[c.key]+=v; if(c.key!=="R"&&c.key!=="JF"&&c.key!=="CP") rowTot+=0;
       h+='<td class="num'+(v===0?' z':'')+'">'+v+'</td>'; });
     // "Total jours" = jours renseignés
+    h+='<td class="num wknd'+(wk[e.id]===0?' z':'')+'">'+wk[e.id]+'</td>';
     const filled=cols.reduce((a,c)=>a+totals[e.id][c.key],0); gTot+=filled;
     h+='<td class="num">'+filled+'</td></tr>';
   });
+  const gWk=cur.employees.reduce((a,e)=>a+wk[e.id],0);
   h+='</tbody><tfoot><tr><td style="text-align:left;padding-left:12px">Total équipe</td>';
-  cols.forEach(c=>h+='<td class="num">'+grand[c.key]+'</td>'); h+='<td class="num">'+gTot+'</td></tr></tfoot></table>';
+  cols.forEach(c=>h+='<td class="num">'+grand[c.key]+'</td>');
+  h+='<td class="num">'+gWk+'</td>';
+  h+='<td class="num">'+gTot+'</td></tr></tfoot></table>';
   box.innerHTML=h;
-  document.getElementById("recapNote").textContent="Période : "+lbl+" — O ouverture · F fermeture · G gestion (incl. inventaire) · JRS · CP congés · JF fériés · R repos · Autres (formation, maladie, réception…).";
+  document.getElementById("recapNote").textContent="Période : "+lbl+" — O ouverture · F fermeture · G gestion (incl. inventaire) · JRS · CP congés · JF fériés · R repos · Autres. W-E repos = nombre de week-ends complets (samedi ET dimanche en R, CP ou JRS la même semaine).";
 }
 
 // ---- mode ----
