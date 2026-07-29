@@ -163,6 +163,10 @@
   .rcard .none{padding:12px 13px;color:var(--muted);font-size:12px}
   input[type=date]{padding:8px 10px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px}
   @media(max-width:640px){ .weeknav .lbl{min-width:0;font-size:13px} header h1 span.full{display:none} .viewnav .vbtn{padding:8px 10px} }
+  #pubBtn.pubon{background:#dcfce7;border-color:#86efac;color:#166534}
+  .mcell.locked{background:repeating-linear-gradient(45deg,#f4f6f5,#f4f6f5 5px,#eceff0 5px,#eceff0 10px) !important}
+  .evtd.locked{background:repeating-linear-gradient(45deg,#f4f6f5,#f4f6f5 5px,#eceff0 5px,#eceff0 10px)}
+  .rcard.locked{opacity:.72}
 </style>
 </head>
 <body>
@@ -174,6 +178,7 @@
   </nav>
   <div class="spacer"></div>
   <span id="modeChip" class="mode-chip"><span class="dot"></span><span id="modeTxt">Consultation</span></span>
+  <button id="shareBtn" class="btn-light">🔗 Lien collaborateurs</button>
   <button id="unlockBtn" class="btn-light">🔒 Espace direction</button>
 </header>
 
@@ -208,6 +213,7 @@
     <div class="card-h">
       <h2 id="planTitle">Planning</h2>
       <button id="addEmpBtn" class="btn-ghost" style="display:none">➕ Collaborateur</button>
+      <button id="pubBtn" class="btn-ghost" style="display:none">◻︎ Publier cette semaine</button>
       <div class="spacer"></div>
       <div class="seg" id="viewSeg" style="margin-right:10px"><button data-v="week" class="on">Semaine</button><button data-v="month">Mois</button></div>
       <div class="weeknav">
@@ -310,6 +316,21 @@
   </div>
 </div>
 
+<!-- Share collab link modal -->
+<div class="ov" id="ovShare">
+  <div class="modal">
+    <h3>Lien de consultation — collaborateurs</h3>
+    <div class="mb">
+      <div class="muted" style="font-size:13px;margin-bottom:10px">À partager aux équipes (mail, SMS, affichage…). Consultation seule : ils voient uniquement les semaines <b>publiées</b> par la direction, sans possibilité de modifier.</div>
+      <input type="text" id="shareUrl" readonly onclick="this.select()" style="width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;font-size:13px;font-family:inherit;box-sizing:border-box">
+    </div>
+    <div class="mf">
+      <button class="btn-ghost" onclick="closeModal('ovShare')">Fermer</button>
+      <button class="btn" id="shareCopy">📋 Copier le lien</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -318,6 +339,9 @@ const SUPABASE_KEY = "sb_publishable__ETgYHnd7kBRJ-4QIkrxPw_UzPxo0dp";
 const H = {"apikey":SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"};
 const BASE_MONDAY = new Date(Date.UTC(2025,11,29)); // S1 lundi = 29/12/2025
 const DAYNAMES = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+// Mode collaborateur : lien partagé en consultation seule + planning publié uniquement
+const IS_COLLAB = (function(){ try{ const p=new URLSearchParams(location.search);
+  return p.get("collab")==="1"||p.get("vue")==="collab"||location.hash==="#collab"; }catch(e){ return false; } })();
 
 // ---- Calendrier français ----
 function easter(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,
@@ -374,12 +398,13 @@ async function rpc(fn,body){
 
 // ---- state ----
 let restaurants=[], dayCodes=[], codeByCat={}, allEmp={};
-let cur={ rid:null, employees:[], shifts:{}, events:{}, monday:null, editRid:null, editCode:null, admin:false, adminCode:null };
+let cur={ rid:null, employees:[], shifts:{}, events:{}, monday:null, editRid:null, editCode:null, admin:false, adminCode:null, pub:new Set() };
 let detailMode="week";
-function render(){ if(detailMode==="month") renderMonth(); else renderGrid(); renderAlerts(); }
+function render(){ if(detailMode==="month") renderMonth(); else renderGrid(); renderAlerts(); updatePubBtn(); }
 function fD(x){ const d = (typeof x==="string")? new Date(x+"T00:00:00Z") : x; return fmtFR(d); }
 function renderAlerts(){
   const box=document.getElementById("alertsBox"); if(!box) return;
+  if(IS_COLLAB){ box.style.display="none"; box.innerHTML=""; return; }
   const today=iso(new Date()); const items=[];
   cur.employees.forEach(e=>{
     const pref=e.id+"|";
@@ -420,8 +445,29 @@ function renderAlerts(){
   });
   h+='</ul>'; box.innerHTML=h;
 }
-function editable(){ return cur.admin || cur.editRid===cur.rid; }
+function editable(){ if(IS_COLLAB) return false; return cur.admin || cur.editRid===cur.rid; }
 function activeCode(){ return cur.admin ? cur.adminCode : cur.editCode; }
+function isWeekPublished(mondayIso){ return cur.pub.has(mondayIso); }
+function weekPublishedFor(dateIso){ return cur.pub.has(iso(mondayOf(new Date(dateIso+"T00:00:00Z")))); }
+function notPublishedHTML(){ return '<div class="empty">🔒 Le planning de cette semaine n\'est pas encore publié par la direction.<br><span class="muted">Reviens un peu plus tard, ou consulte une autre semaine.</span></div>'; }
+// Bouton "Publier" (direction) : visible en vue Semaine uniquement
+function updatePubBtn(){
+  const b=document.getElementById("pubBtn"); if(!b) return;
+  if(IS_COLLAB || !editable() || detailMode!=="week"){ b.style.display="none"; return; }
+  const on=isWeekPublished(iso(cur.monday));
+  b.style.display=""; b.classList.toggle("pubon",on);
+  b.textContent = on ? "✅ Semaine publiée — cliquer pour masquer" : "◻︎ Publier cette semaine";
+  b.title = on ? "Visible par les collaborateurs. Cliquer pour la retirer." : "Rendre cette semaine visible sur le lien collaborateurs.";
+}
+async function togglePublish(){
+  if(!editable()||detailMode!=="week") return;
+  const wk=iso(cur.monday); const want=!isWeekPublished(wk);
+  try{
+    await rpc("set_week_published",{p_restaurant:cur.rid,p_code:activeCode(),p_week:wk,p_published:want});
+    if(want) cur.pub.add(wk); else cur.pub.delete(wk);
+    updatePubBtn(); toast(want?"Semaine publiée pour les collaborateurs":"Semaine masquée");
+  }catch(e){ toast("Erreur : "+e.message,true); }
+}
 let recapPeriod="month";
 
 // ---- code classification for colors + recap ----
@@ -534,17 +580,27 @@ async function renderHome(){
   if(hol) lbl+='<span class="homeflags"><span class="flag holf">Férié · '+esc(hol)+'</span></span>';
   document.getElementById("homeDayLbl").innerHTML=lbl;
   const grid=document.getElementById("homeGrid"); grid.innerHTML='<div class="muted">Chargement…</div>';
-  let rows=[], evrows=[];
+  let rows=[], evrows=[], pubSet=null;
   try{
-    [rows,evrows]=await Promise.all([
+    const monIso=iso(mondayOf(d));
+    const reqs=[
       api("shifts?work_date=eq."+dstr+"&select=restaurant_id,employee_id,code,note"),
       api("events?event_date=eq."+dstr+"&select=restaurant_id,text")
-    ]);
+    ];
+    if(IS_COLLAB) reqs.push(api("published_weeks?week_start=eq."+monIso+"&select=restaurant_id"));
+    const res=await Promise.all(reqs);
+    rows=res[0]; evrows=res[1];
+    if(IS_COLLAB) pubSet=new Set((res[2]||[]).map(p=>p.restaurant_id));
   }catch(e){ grid.innerHTML='<div class="muted">Erreur de chargement.</div>'; return; }
   const map={}; rows.forEach(r=>{ map[r.employee_id]={code:r.code,note:r.note}; });
   const evByR={}; evrows.forEach(ev=>{ (evByR[ev.restaurant_id]=evByR[ev.restaurant_id]||[]).push(ev.text); });
   grid.innerHTML="";
   restaurants.forEach(r=>{
+    if(IS_COLLAB && pubSet && !pubSet.has(r.id)){
+      const card=document.createElement("div"); card.className="rcard locked";
+      card.innerHTML='<div class="rcard-h"><span class="rcode">'+r.id+'</span>'+esc(r.name)+'<span class="rcount">🔒 non publié</span></div><div class="none">Planning non publié par la direction.</div>';
+      grid.appendChild(card); return;
+    }
     const emps=allEmp[r.id]||[]; let working=0, items="";
     emps.forEach(e=>{ const sh=map[e.id];
       const role=e.role?'<span class="role">'+esc(e.role)+'</span>':'';
@@ -590,11 +646,13 @@ async function selectRestaurant(rid){
   document.getElementById("planTitle").textContent="Planning — "+r.name;
   document.getElementById("gridBox").innerHTML='<div class="empty">Chargement…</div>';
   try{
-    const [emps,events,shifts]=await Promise.all([
+    const [emps,events,shifts,pubw]=await Promise.all([
       api("employees?restaurant_id=eq."+rid+"&active=eq.true&select=id,name,role,sort_order&order=sort_order"),
       api("events?restaurant_id=eq."+rid+"&select=id,event_date,text&order=event_date"),
-      fetchAllShifts(rid)
+      fetchAllShifts(rid),
+      api("published_weeks?restaurant_id=eq."+rid+"&select=week_start")
     ]);
+    cur.pub=new Set((pubw||[]).map(p=>p.week_start));
     cur.employees=emps; allEmp[rid]=emps; cur.shifts={}; cur.events={};
     shifts.forEach(s=>{ cur.shifts[s.employee_id+"|"+s.work_date]={code:s.code,note:s.note}; });
     events.forEach(ev=>{ (cur.events[ev.event_date]=cur.events[ev.event_date]||[]).push({id:ev.id,text:ev.text}); });
@@ -608,6 +666,7 @@ function renderGrid(){
   const realToday=iso(new Date());
   document.getElementById("weekLbl").textContent="Semaine du "+fmtLong(mon);
   document.getElementById("weekSub").textContent="S"+sNumber(mon)+" · "+fmtFR(mon)+" – "+fmtFR(addDays(mon,6));
+  if(IS_COLLAB && !isWeekPublished(iso(mon))){ document.getElementById("addEmpBtn").style.display="none"; box.innerHTML=notPublishedHTML(); return; }
   const canEdit = editable(); const zone=zoneOf(cur.rid);
   document.getElementById("addEmpBtn").style.display = canEdit?"":"none";
   let h='<table><thead><tr><th style="text-align:left;padding-left:12px">Collaborateur</th>';
@@ -726,9 +785,10 @@ function renderMonth(){
     h+='<tr><td class="name">'+rm+esc(e.name)+role+'</td>';
     for(let d=1;d<=nb;d++){ const dt=new Date(Date.UTC(y,mo,d)); const di=iso(dt); const key=e.id+"|"+di;
       const sh=cur.shifts[key]; const wd=(dt.getUTCDay()+6)%7; const we=wd>=5; const m=dayMeta(di,zone);
-      const cls=(canEdit?"editable ":"")+(di===realToday?"today-col":(m.hol?"hol-col":(m.vac?"vac-col":(we?"we-col":""))));
+      const lockd=IS_COLLAB && !weekPublishedFor(di);
+      const cls=(canEdit?"editable ":"")+(lockd?"locked ":"")+(di===realToday?"today-col":(m.hol?"hol-col":(m.vac?"vac-col":(we?"we-col":""))));
       let inner='';
-      if(sh&&sh.code){ const c=classify(sh.code); const col=c.color||"#64748b";
+      if(!lockd && sh&&sh.code){ const c=classify(sh.code); const col=c.color||"#64748b";
         inner='<span class="mcode" style="background:'+col+';color:'+txtOn(col)+'" title="'+esc(sh.code)+(sh.note?' — '+esc(sh.note):'')+'">'+esc(sh.code)+'</span>'; }
       h+='<td class="mcell '+cls+'" data-emp="'+e.id+'" data-date="'+di+'">'+inner+'</td>';
     }
@@ -736,8 +796,9 @@ function renderMonth(){
   });
   h+='<tr class="evrow"><td class="name">📌</td>';
   for(let d=1;d<=nb;d++){ const di=iso(new Date(Date.UTC(y,mo,d))); const evs=cur.events[di]||[];
-    const inner = evs.length? '<span class="evdot" title="'+esc(evs.map(x=>x.text).join(', '))+'">'+evs.length+'</span>' : (canEdit?'<span class="evadd">+</span>':'');
-    h+='<td class="evtd '+(canEdit?'edit':'')+'" data-evdate="'+di+'">'+inner+'</td>'; }
+    const lockd=IS_COLLAB && !weekPublishedFor(di);
+    const inner = lockd? '' : (evs.length? '<span class="evdot" title="'+esc(evs.map(x=>x.text).join(', '))+'">'+evs.length+'</span>' : (canEdit?'<span class="evadd">+</span>':''));
+    h+='<td class="evtd '+(canEdit?'edit':'')+(lockd?' locked':'')+'" data-evdate="'+di+'">'+inner+'</td>'; }
   h+='</tr></tbody></table>';
   box.innerHTML=h;
   if(canEdit){
@@ -915,6 +976,27 @@ document.getElementById("aRole").addEventListener("keydown",e=>{ if(e.key==="Ent
 document.getElementById("evAdd").onclick=addEvent;
 document.getElementById("evInput").addEventListener("keydown",e=>{ if(e.key==="Enter") addEvent(); });
 
+document.getElementById("pubBtn").onclick=togglePublish;
+// ---- lien de partage collaborateurs ----
+const COLLAB_LINK = location.origin + location.pathname + "?collab=1";
+document.getElementById("shareBtn").onclick=()=>{
+  const inp=document.getElementById("shareUrl"); inp.value=COLLAB_LINK;
+  openModal("ovShare"); setTimeout(()=>{ inp.focus(); inp.select(); },50);
+};
+document.getElementById("shareCopy").onclick=async()=>{
+  const inp=document.getElementById("shareUrl"); inp.value=COLLAB_LINK; inp.select();
+  try{ await navigator.clipboard.writeText(COLLAB_LINK); toast("Lien copié"); }
+  catch(e){ try{ document.execCommand("copy"); toast("Lien copié"); }
+    catch(_){ toast("Sélectionne et copie le lien manuellement",true); } }
+};
+// ---- mode collaborateur (lien de consultation partagé) ----
+if(IS_COLLAB){
+  const ub=document.getElementById("unlockBtn"); if(ub) ub.style.display="none";
+  const sb=document.getElementById("shareBtn"); if(sb) sb.style.display="none";
+  const rc=document.querySelector(".card.recap"); if(rc) rc.style.display="none";
+  const mt=document.getElementById("modeTxt"); if(mt) mt.textContent="Consultation collaborateurs";
+  const ab=document.getElementById("addEmpBtn"); if(ab) ab.style.display="none";
+}
 document.getElementById("navHome").onclick=()=>showView("home");
 document.getElementById("navDetail").onclick=()=>showView("detail");
 document.getElementById("homeDate").onchange=renderHome;
