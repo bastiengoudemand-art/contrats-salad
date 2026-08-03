@@ -167,6 +167,16 @@
   .mcell.locked{background:repeating-linear-gradient(45deg,#f4f6f5,#f4f6f5 5px,#eceff0 5px,#eceff0 10px) !important}
   .evtd.locked{background:repeating-linear-gradient(45deg,#f4f6f5,#f4f6f5 5px,#eceff0 5px,#eceff0 10px)}
   .rcard.locked{opacity:.72}
+  .wmod{padding:8px 14px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);background:#fafbfa}
+  .wmod b{color:var(--encre);font-weight:700}
+  #gate{position:fixed;inset:0;z-index:1000;background:linear-gradient(135deg,#1f7a4d,#155c39);display:flex;align-items:center;justify-content:center;padding:20px}
+  #gate .gate-card{background:#fff;border-radius:16px;padding:28px 26px;max-width:390px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  #gate .gate-logo{font-weight:800;font-size:16px;margin-bottom:16px;color:var(--vert)}
+  #gate .gate-logo .lg{background:var(--vert);color:#fff;border-radius:8px;padding:3px 8px;margin-right:5px}
+  #gate h3{margin:0 0 6px;font-size:19px}
+  #gate .fld{display:block;margin-top:12px;font-size:12px;font-weight:600;color:var(--muted)}
+  #gate select,#gate input{width:100%;padding:11px 10px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px;box-sizing:border-box;margin-top:4px}
+  #gate .gate-err{color:var(--MAL);font-size:12px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -224,6 +234,7 @@
       </div>
     </div>
     <div id="alertsBox" class="alerts" style="display:none"></div>
+    <div id="weekModif" class="wmod" style="display:none"></div>
     <div class="card-b" id="gridBox"><div class="empty">Chargement…</div></div>
     <div class="legend" id="legend"></div>
   </div>
@@ -316,6 +327,22 @@
   </div>
 </div>
 
+<!-- Écran de connexion (lien principal — accès direction) -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-logo"><span class="lg">S&amp;co</span>Planning Manager</div>
+    <h3>Accès direction</h3>
+    <p class="muted" style="font-size:13px;margin:0 0 6px">Sélectionne ton restaurant et saisis ton code d'accès. Le code administrateur donne accès à tous les restaurants.</p>
+    <label class="fld">Restaurant</label>
+    <select id="gRest"></select>
+    <label class="fld">Code d'accès</label>
+    <input type="password" id="gCode" placeholder="••••" autocomplete="off">
+    <div id="gErr" class="gate-err" style="display:none">Code incorrect.</div>
+    <button class="btn" id="gGo" style="width:100%;margin-top:16px;justify-content:center">Entrer</button>
+    <div class="muted" style="font-size:12px;margin-top:16px;line-height:1.5">Pour la <b>consultation</b> des équipes, utilise le lien collaborateurs (bouton « 🔗 Lien collaborateurs » une fois connecté).</div>
+  </div>
+</div>
+
 <!-- Share collab link modal -->
 <div class="ov" id="ovShare">
   <div class="modal">
@@ -382,7 +409,7 @@ async function api(path,opts={}){
 async function fetchAllShifts(rid){
   let all=[], offset=0; const page=1000;
   for(;;){
-    const rows=await api("shifts?restaurant_id=eq."+rid+"&select=employee_id,work_date,code,note&order=work_date&limit="+page+"&offset="+offset);
+    const rows=await api("shifts?restaurant_id=eq."+rid+"&select=employee_id,work_date,code,note,updated_at&order=work_date&limit="+page+"&offset="+offset);
     all=all.concat(rows||[]);
     if(!rows || rows.length<page) break;
     offset+=page;
@@ -525,6 +552,8 @@ function mondayOf(d){ const x=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth
 function sNumber(monday){ return Math.round((monday-BASE_MONDAY)/(7*864e5))+1; }
 function fmtFR(d){ return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short",timeZone:"UTC"}); }
 function fmtLong(d){ return d.toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}); }
+function fmtDateTime(x){ if(!x) return ""; const d=new Date(x); if(isNaN(d)) return "";
+  return d.toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})+" à "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"}); }
 const todayISO = iso(mondayOf(new Date())); // placeholder set below
 
 // ---- boot ----
@@ -536,16 +565,40 @@ const todayISO = iso(mondayOf(new Date())); // placeholder set below
     ]);
   }catch(e){ document.getElementById("gridBox").innerHTML=
     '<div class="empty">Impossible de charger les données.<br><span class="muted">'+esc(e.message)+'</span></div>'; return; }
-  buildTabs(); buildLegend(); buildLegend2(); buildUnlockRests();
+  buildTabs(); buildLegend(); buildLegend2(); buildUnlockRests(); buildGateRests();
   try{
     const emps=await api("employees?active=eq.true&select=id,name,restaurant_id,sort_order&order=restaurant_id,sort_order");
     allEmp={}; emps.forEach(e=>{ (allEmp[e.restaurant_id]=allEmp[e.restaurant_id]||[]).push(e); });
   }catch(e){}
   document.getElementById("homeDate").value=iso(new Date());
+  if(IS_COLLAB){ await bootApp(restaurants[0].id); }   // lien collaborateur : pas de mot de passe
+  else { showGate(); }                                  // lien principal : connexion obligatoire
+})();
+async function bootApp(startRid){
+  const g=document.getElementById("gate"); if(g) g.style.display="none";
   await renderHome();
   cur.monday = mondayOf(new Date());
-  await selectRestaurant(restaurants[0].id);
-})();
+  await selectRestaurant(startRid||restaurants[0].id);
+}
+function buildGateRests(){ const sel=document.getElementById("gRest"); if(!sel) return; sel.innerHTML="";
+  restaurants.forEach(r=>{ const o=document.createElement("option"); o.value=r.id; o.textContent=r.id+" — "+r.name; sel.appendChild(o); }); }
+function showGate(){ const g=document.getElementById("gate"); if(!g) return; g.style.display="flex";
+  document.getElementById("gCode").value=""; document.getElementById("gErr").style.display="none";
+  setTimeout(()=>{ const c=document.getElementById("gCode"); if(c) c.focus(); },60); }
+async function gateSubmit(){
+  const rid=document.getElementById("gRest").value, code=document.getElementById("gCode").value.trim();
+  const err=document.getElementById("gErr");
+  if(!code){ err.textContent="Merci de saisir un code."; err.style.display="block"; return; }
+  try{
+    const isAdmin=await rpc("verify_admin",{p_code:code});
+    if(isAdmin){ cur.admin=true; cur.adminCode=code; cur.editRid=null; cur.editCode=null;
+      await bootApp(rid); updateModeChip(); toast("Accès administrateur — tous les restaurants"); return; }
+    const ok=await rpc("verify_code",{p_restaurant:rid,p_code:code});
+    if(ok){ cur.admin=false; cur.adminCode=null; cur.editRid=rid; cur.editCode=code;
+      await bootApp(rid); updateModeChip(); toast("Bienvenue — édition déverrouillée"); return; }
+    err.textContent="Code incorrect pour ce restaurant."; err.style.display="block";
+  }catch(e){ err.textContent="Code incorrect."; err.style.display="block"; }
+}
 
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
@@ -654,7 +707,7 @@ async function selectRestaurant(rid){
     ]);
     cur.pub=new Set((pubw||[]).map(p=>p.week_start));
     cur.employees=emps; allEmp[rid]=emps; cur.shifts={}; cur.events={};
-    shifts.forEach(s=>{ cur.shifts[s.employee_id+"|"+s.work_date]={code:s.code,note:s.note}; });
+    shifts.forEach(s=>{ cur.shifts[s.employee_id+"|"+s.work_date]={code:s.code,note:s.note,upd:s.updated_at}; });
     events.forEach(ev=>{ (cur.events[ev.event_date]=cur.events[ev.event_date]||[]).push({id:ev.id,text:ev.text}); });
   }catch(e){ document.getElementById("gridBox").innerHTML='<div class="empty">Erreur de chargement.</div>'; return; }
   render(); renderRecap(); updateModeChip();
@@ -662,6 +715,7 @@ async function selectRestaurant(rid){
 
 function renderGrid(){
   const box=document.getElementById("gridBox");
+  const wm=document.getElementById("weekModif"); if(wm) wm.style.display="none";
   const mon=cur.monday, todayIso=iso(mondayOf(new Date())) && iso(new Date());
   const realToday=iso(new Date());
   document.getElementById("weekLbl").textContent="Semaine du "+fmtLong(mon);
@@ -698,6 +752,11 @@ function renderGrid(){
   h+='</tr>';
   h+='</tbody></table>';
   box.innerHTML=h;
+  // date de dernière modification de la semaine
+  let maxUpd=null;
+  cur.employees.forEach(e=>{ for(let i=0;i<7;i++){ const s=cur.shifts[e.id+"|"+iso(addDays(mon,i))];
+    if(s&&s.upd&&(!maxUpd||s.upd>maxUpd)) maxUpd=s.upd; } });
+  if(wm){ if(maxUpd){ wm.style.display=""; wm.innerHTML='🕒 Semaine mise à jour le <b>'+fmtDateTime(maxUpd)+'</b>'; } else { wm.style.display="none"; } }
   if(canEdit){
     box.querySelectorAll("td.editable").forEach(td=>{ td.onclick=()=>openEdit(td.dataset.emp, td.dataset.date); });
     box.querySelectorAll("button.rm").forEach(b=>{ b.onclick=(ev)=>{ ev.stopPropagation(); removeEmp(b.dataset.rm); }; });
@@ -762,6 +821,7 @@ async function delEvent(id){
 // ---- vue mensuelle ----
 function renderMonth(){
   const box=document.getElementById("gridBox");
+  const wm=document.getElementById("weekModif"); if(wm) wm.style.display="none";
   const canEdit=editable(); const zone=zoneOf(cur.rid);
   document.getElementById("addEmpBtn").style.display=canEdit?"":"none";
   const anchor=cur.monday; const y=anchor.getUTCFullYear(), mo=anchor.getUTCMonth();
@@ -873,11 +933,9 @@ function updateModeChip(){
 
 // ---- unlock ----
 document.getElementById("unlockBtn").onclick=()=>{
-  if(cur.admin || cur.editRid){ cur.admin=false; cur.adminCode=null; cur.editRid=null; cur.editCode=null;
-    updateModeChip(); render(); toast("Mode consultation"); return; }
-  document.getElementById("uRest").value=cur.rid; document.getElementById("uCode").value="";
-  document.getElementById("uErr").style.display="none"; openModal("ovUnlock");
-  setTimeout(()=>document.getElementById("uCode").focus(),50);
+  // Se verrouiller / changer de compte : revient à l'écran de connexion
+  cur.admin=false; cur.adminCode=null; cur.editRid=null; cur.editCode=null;
+  updateModeChip(); showGate();
 };
 document.getElementById("uGo").onclick=async()=>{
   const rid=document.getElementById("uRest").value, code=document.getElementById("uCode").value.trim();
@@ -922,7 +980,7 @@ async function saveShift(emp,date,code,note){
   try{
     await rpc("save_shift",{p_restaurant:cur.rid,p_code:activeCode(),p_employee:Number(emp),p_date:date,p_code_val:code,p_note:note});
     const key=emp+"|"+date;
-    if(!code&&!note) delete cur.shifts[key]; else cur.shifts[key]={code,note};
+    if(!code&&!note) delete cur.shifts[key]; else cur.shifts[key]={code,note,upd:new Date().toISOString()};
     closeModal("ovEdit"); render(); renderRecap(); toast("Enregistré");
   }catch(e){ toast("Erreur : "+e.message, true); }
 }
@@ -977,6 +1035,8 @@ document.getElementById("evAdd").onclick=addEvent;
 document.getElementById("evInput").addEventListener("keydown",e=>{ if(e.key==="Enter") addEvent(); });
 
 document.getElementById("pubBtn").onclick=togglePublish;
+document.getElementById("gGo").onclick=gateSubmit;
+document.getElementById("gCode").addEventListener("keydown",e=>{ if(e.key==="Enter") gateSubmit(); });
 // ---- lien de partage collaborateurs ----
 const COLLAB_LINK = location.origin + location.pathname + "?collab=1";
 document.getElementById("shareBtn").onclick=()=>{
@@ -991,6 +1051,7 @@ document.getElementById("shareCopy").onclick=async()=>{
 };
 // ---- mode collaborateur (lien de consultation partagé) ----
 if(IS_COLLAB){
+  const gt=document.getElementById("gate"); if(gt) gt.style.display="none";
   const ub=document.getElementById("unlockBtn"); if(ub) ub.style.display="none";
   const sb=document.getElementById("shareBtn"); if(sb) sb.style.display="none";
   const rc=document.querySelector(".card.recap"); if(rc) rc.style.display="none";
