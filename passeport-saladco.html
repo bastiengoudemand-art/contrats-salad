@@ -560,7 +560,7 @@ function renderHome(){
     return `<div class="card click" onclick="go('resto',{rid:'${r.id}'})"><div class="card-top-strip"></div><div class="resto-icon">🏠</div><h3>${esc(r.name)}</h3><div class="sub">${esc(r.city||'Restaurant Salad&Co')}</div><div class="stat-row"><div class="stat"><b>${act.length}</b><span>Collaborateurs</span></div><div class="stat"><b>${avg}%</b><span>Progression moy.</span></div></div></div>`;
   }).join('');
   if(isAdmin()) cards+=`<div class="add-card" onclick="modalResto()"><div class="plus">+</div>Nouveau restaurant</div>`;
-  app.innerHTML=`<div class="page-head"><div><h1>Vos restaurants</h1><p>Chaque restaurant gère sa propre équipe et ses passeports collaborateurs.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" onclick="go('dashboard')">📊 Comparer les restaurants</button>${isAdmin()?`<button class="btn ghost" onclick="startL29Import()" title="Mettre à jour les effectifs depuis un PDF L29">📥 L29 - SUIVI DES EFFECTIFS</button><button class="btn" onclick="modalResto()">＋ Nouveau restaurant</button>`:''}</div></div>${rs.length===0?`<div class="empty"><div class="emo">🏝️</div><h3>Aucun restaurant</h3><p>${isAdmin()?'Créez votre premier restaurant.':'Aucune donnée pour l’instant.'}</p></div>`:`<div class="grid">${cards}</div>`}`;
+  app.innerHTML=`<div class="page-head"><div><h1>Vos restaurants</h1><p>Chaque restaurant gère sa propre équipe et ses passeports collaborateurs.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap">${installBtnHtml()}<button class="btn ghost" onclick="go('dashboard')">📊 Comparer les restaurants</button>${isAdmin()?`<button class="btn ghost" onclick="startL29Import()" title="Mettre à jour les effectifs depuis un PDF L29">📥 L29 - SUIVI DES EFFECTIFS</button><button class="btn" onclick="modalResto()">＋ Nouveau restaurant</button>`:''}</div></div>${rs.length===0?`<div class="empty"><div class="emo">🏝️</div><h3>Aucun restaurant</h3><p>${isAdmin()?'Créez votre premier restaurant.':'Aucune donnée pour l’instant.'}</p></div>`:`<div class="grid">${cards}</div>`}`;
 }
 function renderResto(){
   const r=getResto(VIEW.rid); if(!r){go('home');return;}
@@ -1244,6 +1244,34 @@ document.addEventListener('click',e=>{
 if('serviceWorker' in navigator && location.protocol==='https:'){
   window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
 }
+/* --- Bouton « Installer l'application » --- */
+let pwaPrompt=null;
+function pwaStandalone(){ try{ return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }catch(e){ return false; } }
+function pwaIsIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
+function installBtnHtml(){
+  if(pwaStandalone()) return '';                 // déjà installée : pas de bouton
+  if(!pwaPrompt&&!pwaIsIOS()) return '';         // pas encore installable sur ce navigateur
+  return `<button class="btn ghost" onclick="installApp()" title="Ajouter le Passeport à l'écran d'accueil">📲 Installer l'application</button>`;
+}
+async function installApp(){
+  if(pwaPrompt){
+    const p=pwaPrompt; pwaPrompt=null;
+    try{ p.prompt(); const ch=await p.userChoice; if(ch&&ch.outcome==='accepted'){ toast('📲 Application installée !','gold'); } else { pwaPrompt=p; } }catch(e){ pwaPrompt=p; }
+    render();
+    return;
+  }
+  // iOS (Safari) : pas d'installation automatique possible, on guide pas à pas
+  modal.innerHTML=`<h3>📲 Installer sur iPhone / iPad</h3><p class="mhint">Safari ne propose pas de bouton automatique — c'est l'affaire de 3 gestes :</p>
+    <div class="ref-steps" style="display:flex;flex-direction:column;gap:12px">
+      <div>1️⃣ Touchez le bouton <b>Partager</b> <span style="display:inline-block;border:1px solid var(--line);border-radius:6px;padding:1px 7px">⬆️</span> en bas de Safari</div>
+      <div>2️⃣ Faites défiler et choisissez <b>« Sur l'écran d'accueil »</b></div>
+      <div>3️⃣ Touchez <b>Ajouter</b> — l'icône <span style="display:inline-block;background:#1b1d1a;color:#6cbe2e;font-weight:900;border-radius:6px;padding:0 7px;transform:skewX(-6deg)">&amp;</span> Passeport apparaît comme une app</div>
+    </div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Compris</button></div>`;
+  overlay.classList.add('show');
+}
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); pwaPrompt=e; try{ if(document.getElementById('mainApp').style.display!=='none'&&(!VIEW.name||VIEW.name==='home'))render(); }catch(err){} });
+window.addEventListener('appinstalled',()=>{ pwaPrompt=null; toast('📲 Passeport installé sur votre écran d’accueil','gold'); try{ render(); }catch(e){} });
 </script>
 </body>
 </html>
