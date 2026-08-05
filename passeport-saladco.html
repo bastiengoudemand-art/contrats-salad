@@ -2,8 +2,15 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Passeport Collaborateur · Salad&Co</title>
+<meta name="theme-color" content="#1b1d1a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Passeport">
 <style>
   :root{
     --green:#6cbe2e;--green-d:#4f9a1c;--green-l:#eaf7dd;--ink:#1b1d1a;--ink-soft:#4a4f47;
@@ -258,13 +265,68 @@
   .ref-steps{font-size:13px;color:var(--ink-soft);line-height:1.6}
   .ref-steps b{color:var(--ink)}
   .ref-drop{border:2px dashed #cdd7c0;border-radius:12px;padding:18px;text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+  button,.subtab,.comp .cbox,.chal{touch-action:manipulation}
+  @media(max-width:720px){
+    .subtabs{position:sticky;top:calc(48px + max(8px, env(safe-area-inset-top)));z-index:30;box-shadow:0 6px 16px rgba(30,50,15,.12)}
+  }
   @media(max-width:560px){
-    .wrap{padding:20px 15px 70px}
+    /* --- Barre du haut compacte, une seule ligne --- */
+    header.topbar{padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));gap:10px;flex-wrap:nowrap;min-height:56px}
+    .brand .btxt{display:none}
+    .brand .amp{font-size:26px}
+    .crumbs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;font-size:13px;min-width:0}
+    .crumbs::-webkit-scrollbar{display:none}
+    .crumbs a,.crumbs .cur{white-space:nowrap}
+    .topbar .icon-btn{padding:8px 10px}
+    .topbar .icon-btn .lbl{display:none}
+    .user-chip{padding:4px;gap:5px}
+    .user-chip .un,.user-chip .role-pill{display:none}
+    /* --- Page --- */
+    .wrap{padding:16px 12px calc(70px + env(safe-area-inset-bottom))}
+    .page-head h1{font-size:21px}
+    .page-head{gap:10px}
+    .page-head .btn{flex:1 1 auto;justify-content:center}
+    input,select,textarea{font-size:16px !important} /* évite le zoom automatique iOS à la saisie */
+    .btn{padding:12px 16px}
+    .btn.small{padding:10px 13px}
+    .tiny-btn{padding:11px 12px}
+    /* --- Hero passeport --- */
+    .pp-hero{padding:18px 16px;border-radius:16px}
     .pp-hero .lvlbox{margin-left:0;text-align:left;width:100%;margin-top:10px}
-    .page-head h1{font-size:22px}
+    .pp-id h2{font-size:20px}
+    /* --- Navigation onglets + modules --- */
+    .subtab{padding:11px 14px;font-size:14px}
+    .mb-head{padding:14px 12px;gap:10px}
+    .mb-body{padding:2px 12px 14px}
+    .mb-prog>.bar{display:none} /* on garde le % chiffré, gain de place */
+    /* --- Saisie des compétences : grandes cases tactiles --- */
+    .comp{padding:13px 0;gap:12px}
+    .comp .cbox{width:36px;height:36px;border-radius:11px;font-size:18px}
+    .comp .clabel{font-size:14.5px;cursor:pointer}
+    .chal{padding:12px}
+    .badges-grid{grid-template-columns:repeat(auto-fill,minmax(72px,1fr))}
+    /* --- Tableaux & dashboard --- */
     .rank-row .rn{width:110px}
+    .dtable{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
     .dtable .hide-sm{display:none}
-    .user-chip .un{max-width:80px}
+    .dash-tiles{grid-template-columns:repeat(2,1fr);gap:10px}
+    .tile{padding:14px 16px}
+    .tile .tv{font-size:26px}
+    /* --- Modales en volet bas, plein écran de large --- */
+    .overlay{padding:0;align-items:flex-end}
+    .modal{max-width:100%;border-radius:20px 20px 0 0;max-height:94vh;padding:20px 16px calc(18px + env(safe-area-inset-bottom));animation:up .22s ease}
+    .modal-actions{position:sticky;bottom:0;background:#fff;padding-top:10px;margin-top:16px}
+    /* --- Signature confortable --- */
+    .signpad-wrap canvas{height:230px}
+    .signbox{min-width:100%}
+    .sess-acts{max-width:none;justify-content:flex-start}
+    /* --- Import L29 sur petit écran --- */
+    .imp-modal{border-radius:20px 20px 0 0}
+    .imp-scroll{max-height:none}
+    .imp-row input.nm{width:47%}
+    .imp-row input.fn{width:41%}
+    .imp-site-head .spush{margin-left:0;width:100%}
+    .imp-site-head select{max-width:none;flex:1}
   }
   /* ===== Import L29 ===== */
   .imp-modal{max-width:1000px}
@@ -480,8 +542,8 @@ function render(){
 }
 function renderTop(){
   document.getElementById('topActions').innerHTML=`
-    <button class="icon-btn" onclick="go('dashboard')" title="Comparer les restaurants">📊 Tableau de bord</button>
-    ${isAdmin()?`<button class="icon-btn" onclick="modalRef()" title="Modifier la liste des questions">📝 Référentiel</button><button class="icon-btn" onclick="modalShare()" title="Inviter des directeurs">👥 Accès</button>`:''}
+    <button class="icon-btn" onclick="go('dashboard')" title="Comparer les restaurants">📊<span class="lbl"> Tableau de bord</span></button>
+    ${isAdmin()?`<button class="icon-btn" onclick="modalRef()" title="Modifier la liste des questions">📝<span class="lbl"> Référentiel</span></button><button class="icon-btn" onclick="modalShare()" title="Inviter des directeurs">👥<span class="lbl"> Accès</span></button>`:''}
     <div class="user-chip"><span class="un">${esc(ME.full_name||ME.email)}</span><span class="role-pill ${isAdmin()?'admin':'invite'}">${isAdmin()?'Admin':'Directeur invité'}</span><button class="icon-btn" style="padding:6px 9px" onclick="modalAccount()" title="Mon compte">⚙</button></div>`;
 }
 function renderCrumbs(){
@@ -702,7 +764,7 @@ function openSign(kind,id,role){
 }
 function initSignPad(){
   const cv=document.getElementById('signPad'); if(!cv)return;
-  const rect=cv.getBoundingClientRect(); cv.width=rect.width*2; cv.height=180*2; const ctx=cv.getContext('2d'); ctx.scale(2,2); ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1b1d1a';
+  const rect=cv.getBoundingClientRect(); cv.width=rect.width*2; cv.height=(rect.height||180)*2; const ctx=cv.getContext('2d'); ctx.scale(2,2); ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1b1d1a';
   let drawing=false,last=null,dirty=false;
   function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; }
   function start(e){ drawing=true; last=pos(e); e.preventDefault(); }
@@ -1166,6 +1228,22 @@ sb.auth.onAuthStateChange((event)=>{ if(event==='PASSWORD_RECOVERY'){ showSetNew
   if(recovering) return;
   if(session){ await afterLogin(); } else { renderAuth(); }
 })();
+
+/* ===================== MOBILE & PWA ===================== */
+/* Sur écran tactile, taper le libellé d'une compétence coche/décoche la case. */
+document.addEventListener('click',e=>{
+  try{
+    if(!window.matchMedia||!matchMedia('(pointer:coarse)').matches)return;
+    const lbl=e.target.closest('.clabel'); if(!lbl)return;
+    if(e.target.closest('a,button,textarea,input,.cbox'))return;
+    const box=lbl.parentElement&&lbl.parentElement.querySelector('.cbox');
+    if(box)box.click();
+  }catch(err){}
+});
+/* Installation sur l'écran d'accueil (PWA) — nécessite manifest.webmanifest, sw.js et les icônes à côté de ce fichier. */
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
 </script>
 </body>
 </html>
