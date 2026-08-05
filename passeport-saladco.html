@@ -266,6 +266,41 @@
     .dtable .hide-sm{display:none}
     .user-chip .un{max-width:80px}
   }
+  /* ===== Import L29 ===== */
+  .imp-modal{max-width:1000px}
+  .imp-drop{border:2px dashed #cdd7c0;border-radius:14px;padding:26px;text-align:center;color:var(--muted);font-size:13.5px;cursor:pointer;transition:.15s}
+  .imp-drop:hover{border-color:var(--green);background:var(--green-l);color:var(--ink-soft)}
+  .imp-drop .emo{font-size:40px;display:block;margin-bottom:8px}
+  .imp-sum{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 6px}
+  .imp-chip{background:#f2f4ef;border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:700;color:var(--ink-soft)}
+  .imp-chip b{color:var(--ink)}
+  .imp-chip.green{background:var(--green-l);color:var(--green-d)}
+  .imp-chip.gold{background:#fbeecb;color:#a97b12}
+  .imp-scroll{max-height:54vh;overflow:auto;margin-top:6px;padding-right:4px}
+  .imp-site{border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden}
+  .imp-site-head{display:flex;align-items:center;gap:12px;padding:11px 14px;background:#f8faf5;flex-wrap:wrap}
+  .imp-site-head .sname{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
+  .imp-site-head .scode{font-size:11px;color:var(--muted);font-weight:600}
+  .imp-site-head .spush{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft)}
+  .imp-site-head select{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:13px;background:#fff;max-width:220px}
+  .imp-site-body{padding:4px 14px 12px}
+  .imp-grp{margin-top:8px}
+  .imp-grp h5{margin:10px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  .imp-row{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:9px;flex-wrap:wrap}
+  .imp-row:hover{background:#f8faf5}
+  .imp-row input[type=text],.imp-row input[type=date]{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:13px}
+  .imp-row input.nm{width:160px;text-transform:uppercase}
+  .imp-row input.fn{width:130px}
+  .imp-row input.dt{width:150px}
+  .imp-row.warn{background:#fdf7e6}
+  .imp-row.ign{opacity:.75}
+  .imp-nm{font-size:13.5px;font-weight:600}
+  .imp-note{font-size:11.5px;color:#a97b12;font-weight:700}
+  .imp-note.err{color:#c9401f}
+  .imp-note.mut{color:var(--muted);font-weight:600}
+  .imp-none{font-size:12.5px;color:var(--muted);font-style:italic;padding:3px 6px}
+  .imp-strike{color:var(--muted);text-decoration:line-through}
+  .imp-arrow{color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -291,9 +326,12 @@
 <div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal"></div></div>
 <div class="toast-zone" id="toasts"></div>
 <input type="file" id="refFile" accept=".xlsx" style="display:none" onchange="importRef(event)">
+<input type="file" id="l29File" accept="application/pdf,.pdf" style="display:none" onchange="onL29File(event)">
+<div class="overlay" id="impOverlay" onclick="if(event.target===this)closeImport()"><div class="modal imp-modal" id="impModal"></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
 <script>
 /* ===================== CONFIG SUPABASE ===================== */
 const SUPA_URL='https://wplolvjziqqvvcydvfxs.supabase.co';
@@ -460,7 +498,7 @@ function renderHome(){
     return `<div class="card click" onclick="go('resto',{rid:'${r.id}'})"><div class="card-top-strip"></div><div class="resto-icon">🏠</div><h3>${esc(r.name)}</h3><div class="sub">${esc(r.city||'Restaurant Salad&Co')}</div><div class="stat-row"><div class="stat"><b>${act.length}</b><span>Collaborateurs</span></div><div class="stat"><b>${avg}%</b><span>Progression moy.</span></div></div></div>`;
   }).join('');
   if(isAdmin()) cards+=`<div class="add-card" onclick="modalResto()"><div class="plus">+</div>Nouveau restaurant</div>`;
-  app.innerHTML=`<div class="page-head"><div><h1>Vos restaurants</h1><p>Chaque restaurant gère sa propre équipe et ses passeports collaborateurs.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" onclick="go('dashboard')">📊 Comparer les restaurants</button>${isAdmin()?`<button class="btn" onclick="modalResto()">＋ Nouveau restaurant</button>`:''}</div></div>${rs.length===0?`<div class="empty"><div class="emo">🏝️</div><h3>Aucun restaurant</h3><p>${isAdmin()?'Créez votre premier restaurant.':'Aucune donnée pour l’instant.'}</p></div>`:`<div class="grid">${cards}</div>`}`;
+  app.innerHTML=`<div class="page-head"><div><h1>Vos restaurants</h1><p>Chaque restaurant gère sa propre équipe et ses passeports collaborateurs.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn ghost" onclick="go('dashboard')">📊 Comparer les restaurants</button>${isAdmin()?`<button class="btn ghost" onclick="startL29Import()" title="Mettre à jour les effectifs depuis un PDF L29">📥 L29 - SUIVI DES EFFECTIFS</button><button class="btn" onclick="modalResto()">＋ Nouveau restaurant</button>`:''}</div></div>${rs.length===0?`<div class="empty"><div class="emo">🏝️</div><h3>Aucun restaurant</h3><p>${isAdmin()?'Créez votre premier restaurant.':'Aucune donnée pour l’instant.'}</p></div>`:`<div class="grid">${cards}</div>`}`;
 }
 function renderResto(){
   const r=getResto(VIEW.rid); if(!r){go('home');return;}
@@ -772,6 +810,247 @@ async function importRef(ev){
   }catch(e){ toast('⚠ Import impossible : '+e.message,'err'); }
 }
 function resetRef(){ confirmModalGeneric('Réinitialiser le référentiel ?','La liste des questions reviendra à la version d’origine Salad&Co. La progression déjà saisie reste conservée.', 'Réinitialiser', async()=>{ const def=buildDefaultRef(); const {error}=await sb.from('pp_config').upsert({id:'main',data:def,updated_by:ME.id,updated_at:nowISO()}); if(error)return toast('⚠ '+error.message,'err'); await audit('referentiel',null,'Référentiel réinitialisé',''); REF=def; closeModal(); toast('↺ Référentiel réinitialisé'); await loadAll(); render(); }); }
+
+/* ===================== IMPORT L29 (SUIVI DES EFFECTIFS) ===================== */
+/* Correspondance nom de site L29 -> nom de restaurant dans l'app.
+   Modifiable librement dans l'aperçu via le menu déroulant de chaque site. */
+const L29_SITE_MAP={
+  'HERON':'Héron','NOYELLES':'Noyelles','LE PONTET':'Le Pontet','MERIGNAC':'Mérignac',
+  'VILLENAVE':'Villenave','LILLE':'Salad&Co Lille Centre','KIABI LEZENNES':'Kiabi','KIABI':'Kiabi',
+  'ADEO RONCHIN':'Adeo','ADEO':'Adeo','TOULON':'La Valette','CAEN':'Mondeville',
+  'BTWIN':'Campus Btwin','CAMPUS':'Campus Btwin','CAMPUS BTWIN':'Campus Btwin'
+};
+let IMP=null;
+function stripAccents(s){ return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function normKey(s){ return stripAccents(String(s||'')).toUpperCase().replace(/[^A-Z0-9]/g,''); }
+function isTrunc(s){ return /[…]|\.\.\.\s*$/.test(String(s||'')); }
+function stripTrunc(s){ return String(s||'').replace(/\s*(?:…|\.\.\.)\s*$/,'').trim(); }
+function dmyToIso(s){ const m=String(s||'').match(/(\d{2})-(\d{2})-(\d{4})/); return m?(m[3]+'-'+m[2]+'-'+m[1]):''; }
+function splitL29Name(raw){
+  const s=stripTrunc(raw).replace(/\s+/g,' ').trim();
+  if(!s) return {last:'',first:''};
+  const toks=s.split(' ');
+  const isUp=t=>{ const l=stripAccents(t).replace(/[^A-Za-z]/g,''); return l.length>0 && l===l.toUpperCase(); };
+  const last=[],first=[]; let i=0;
+  while(i<toks.length && isUp(toks[i])){ last.push(toks[i]); i++; }
+  while(i<toks.length){ first.push(toks[i]); i++; }
+  // Cas "NOM PRENOM" (tout en majuscules) : dernier token = prénom
+  if(!first.length && last.length>1){ first.push(last.pop()); }
+  if(!last.length && toks.length){ return {last:toks[0], first:toks.slice(1).join(' ')}; }
+  return {last:last.join(' '), first:first.join(' ')};
+}
+function startL29Import(){ if(needAdmin())return; document.getElementById('l29File').click(); }
+async function onL29File(ev){
+  const file=ev.target.files[0]; if(!file){return;} ev.target.value='';
+  if(needAdmin())return;
+  if(!window.pdfjsLib){ toast('⚠ Lecteur PDF non chargé, vérifiez la connexion','err'); return; }
+  try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js'; }catch(e){}
+  openImportLoading(file.name);
+  try{
+    const parsed=await parseL29Pdf(file);
+    if(!parsed.length){ document.getElementById('impModal').innerHTML=`<h3>Import L29</h3><p class="mhint">Aucune donnée exploitable n'a été trouvée dans ce PDF. Vérifiez qu'il s'agit bien d'un export « L29 - SUIVI DES EFFECTIFS ».</p><div class="modal-actions"><button class="btn ghost" onclick="closeImport()">Fermer</button></div>`; return; }
+    IMP={sites:parsed}; renderImport();
+  }catch(e){ document.getElementById('impModal').innerHTML=`<h3>Import impossible</h3><p class="mhint">${esc(e.message||String(e))}</p><div class="modal-actions"><button class="btn ghost" onclick="closeImport()">Fermer</button></div>`; }
+}
+function openImportLoading(fname){ const m=document.getElementById('impModal'); m.innerHTML=`<h3>📥 Import L29</h3><p class="mhint">Lecture de <b>${esc(fname)}</b>…</p><div class="loader" style="min-height:120px"><div class="spin"></div> Analyse du PDF…</div>`; document.getElementById('impOverlay').classList.add('show'); }
+function closeImport(){ document.getElementById('impOverlay').classList.remove('show'); document.getElementById('impModal').innerHTML=''; IMP=null; }
+
+async function parseL29Pdf(file){
+  const buf=await file.arrayBuffer();
+  const pdf=await window.pdfjsLib.getDocument({data:buf}).promise;
+  const sitesByCode={}; const order=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const vw=page.getViewport({scale:1});
+    const tc=await page.getTextContent();
+    const items=tc.items.map(it=>({str:(it.str||'').trim(),x:it.transform[4],y:it.transform[5]})).filter(it=>it.str!=='');
+    if(!items.length) continue;
+    // --- Site --- (deux libellés "concerné" existent : Mois ET Site ; on garde celui qui donne un code + nom)
+    let code='',name='';
+    const anchors=items.filter(i=>/concern/i.test(stripAccents(i.str)));
+    for(const anc of anchors){
+      const right=items.filter(i=>Math.abs(i.y-anc.y)<5 && i.x>anc.x).sort((a,b)=>a.x-b.x);
+      const rt=(anc.str+' '+right.map(i=>i.str).join(' ')).replace(/(?:mois|site)?\s*concern[ée]s?\s*:?/i,' ');
+      const mm=rt.match(/(\d{3,6})\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ0-9'’ .\-]*)/);
+      if(mm){ code=mm[1].trim(); name=mm[2].replace(/\s+/g,' ').trim(); break; }
+    }
+    if(!name) name='Site '+(p);
+    if(!code) code='p'+p;
+    // --- Colonnes (anchors ENTRÉS / INCHANGÉS / SORTIS) ---
+    const fx=re=>{ const it=items.find(i=>re.test(stripAccents(i.str).toUpperCase())); return it?it.x:null; };
+    let xE=fx(/COLLABORATEURS\s+ENTR/)||fx(/\bENTRES?\b/);
+    let xI=fx(/COLLABORATEURS\s+INCHANG/)||fx(/INCHANG/);
+    let xS=fx(/COLLABORATEURS\s+SORTI/)||fx(/SORTIS?/);
+    if(xE==null||xI==null||xS==null){ xE=vw.width*0.02; xI=vw.width*0.37; xS=vw.width*0.70; }
+    const b1=(xE+xI)/2, b2=(xI+xS)/2;
+    const colOf=x=> x<b1?0:(x<b2?1:2);
+    // --- Regrouper par ligne (y) dans chaque colonne ---
+    const cols=[[],[],[]];
+    items.forEach(i=>cols[colOf(i.x)].push(i));
+    function rowsOf(arr){
+      arr.sort((a,b)=>b.y-a.y);
+      const buckets=[];
+      arr.forEach(i=>{ let bk=buckets.find(bb=>Math.abs(bb.y-i.y)<3.2); if(!bk){bk={y:i.y,its:[]};buckets.push(bk);} bk.its.push(i); });
+      return buckets.map(bk=>bk.its.sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ').replace(/\s+/g,' ').trim());
+    }
+    function parseRows(lines){
+      const out=[];
+      lines.forEach(line=>{
+        if(/collaborateur|d[ée]but contrat|fin contrat|^COLLABORATEURS/i.test(line)) return;
+        const ds=[...line.matchAll(/(\d{2})-(\d{2})-(\d{4})/g)];
+        if(!ds.length) return;
+        const nameRaw=line.slice(0,ds[0].index).replace(/[▲▼▲▼]/g,'').trim();
+        if(!nameRaw) return;
+        out.push({raw:nameRaw, trunc:isTrunc(nameRaw), debut:dmyToIso(ds[0][0]), fin:ds[1]?dmyToIso(ds[1][0]):''});
+      });
+      return out;
+    }
+    const entres=parseRows(rowsOf(cols[0]));
+    const inchanges=parseRows(rowsOf(cols[1]));
+    const sortis=parseRows(rowsOf(cols[2]));
+    let s=sitesByCode[code];
+    if(!s){ s={code,name,entres:[],inchangesCount:0,sortis:[]}; sitesByCode[code]=s; order.push(code); }
+    s.entres.push(...entres); s.sortis.push(...sortis); s.inchangesCount+=inchanges.length;
+  }
+  return order.map(c=>sitesByCode[c]);
+}
+
+/* ---- Correspondances ---- */
+function guessRestoId(siteName){
+  const target=L29_SITE_MAP[stripAccents(siteName).toUpperCase().trim()];
+  if(target){ const r=STORE.restaurants.find(x=>x.name===target); if(r)return r.id; }
+  const k=normKey(siteName);
+  let r=STORE.restaurants.find(x=>normKey(x.name)===k); if(r)return r.id;
+  r=STORE.restaurants.find(x=>normKey(x.name).includes(k)||k.includes(normKey(x.name))); if(r)return r.id;
+  return '';
+}
+function matchCollab(resto,raw){
+  if(!resto) return {none:true};
+  const t=normKey(stripTrunc(raw)); const trunc=isTrunc(raw);
+  const act=resto.collaborators.filter(c=>!c.archived);
+  const keys=act.map(c=>({c,a:normKey(c.lastName+c.firstName),b:normKey(c.firstName+c.lastName)}));
+  let hit=keys.filter(x=>x.a===t||x.b===t);
+  if(hit.length===1) return {c:hit[0].c};
+  if(hit.length>1) return {ambiguous:true};
+  if(trunc && t.length>=3){ hit=keys.filter(x=>x.a.startsWith(t)||x.b.startsWith(t)); if(hit.length===1)return{c:hit[0].c}; if(hit.length>1)return{ambiguous:true}; }
+  return {none:true};
+}
+function restoOptions(sel){
+  const opts=STORE.restaurants.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(r=>`<option value="${r.id}" ${String(r.id)===String(sel)?'selected':''}>${esc(r.name)}</option>`).join('');
+  return `<option value="">— Ignorer ce site —</option>${opts}`;
+}
+
+/* ---- Rendu de l'aperçu ---- */
+function renderImport(){
+  IMP.sites.forEach(s=>{ if(s.rid===undefined) s.rid=guessRestoId(s.name); });
+  const totals=computeImportTotals();
+  const sitesH=IMP.sites.map((s,idx)=>`
+    <div class="imp-site" data-site="${idx}">
+      <div class="imp-site-head">
+        <div class="sname">🏠 ${esc(s.name)} <span class="scode">(${esc(s.code)})</span></div>
+        <div class="spush"><span>→ Restaurant :</span><select class="rmap" data-site="${idx}" onchange="remapSite(${idx},this.value)">${restoOptions(s.rid)}</select></div>
+      </div>
+      <div class="imp-site-body" id="impBody${idx}">${renderSiteBody(idx)}</div>
+    </div>`).join('');
+  document.getElementById('impModal').innerHTML=`
+    <div class="imp-head" style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+      <h3 style="margin:0">📥 Import L29 — aperçu</h3>
+      <button class="icon-btn" style="color:var(--ink-soft);background:#f2f4ef" onclick="closeImport()">✕ Fermer</button>
+    </div>
+    <p class="mhint">Vérifiez la correspondance des sites et les collaborateurs à créer / archiver, puis validez. <b>Rien n'est écrit dans la base tant que vous n'avez pas cliqué sur « Valider ».</b></p>
+    <div class="imp-sum" id="impSum">${totals.html}</div>
+    <div class="imp-scroll">${sitesH}</div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn ghost" onclick="closeImport()">Annuler</button>
+      <button class="btn" id="impApplyBtn" onclick="applyImport()">✓ Valider et appliquer</button>
+    </div>`;
+  document.getElementById('impOverlay').classList.add('show');
+}
+function computeImportTotals(){
+  let create=0,archive=0,ignored=0,unmapped=0;
+  IMP.sites.forEach((s,idx)=>{ const cl=classifySite(idx); create+=cl.create.length; archive+=cl.archive.length; ignored+=cl.ignored.length+cl.badSort.length; if(!s.rid)unmapped++; });
+  const html=`<span class="imp-chip green">À créer : <b>${create}</b></span><span class="imp-chip gold">À archiver : <b>${archive}</b></span><span class="imp-chip">Ignorés : <b>${ignored}</b></span><span class="imp-chip">Sites : <b>${IMP.sites.length}</b></span>${unmapped?`<span class="imp-chip gold">Sites non mappés : <b>${unmapped}</b></span>`:''}`;
+  return {create,archive,ignored,html};
+}
+function classifySite(idx){
+  const s=IMP.sites[idx]; const resto=s.rid?getResto(s.rid):null;
+  const create=[],ignored=[],archive=[],badSort=[];
+  s.entres.forEach(e=>{
+    if(e.fin){ ignored.push({e,reason:'Fin de contrat renseignée ('+frDate(e.fin)+')'}); return; }
+    const m=resto?matchCollab(resto,e.raw):{none:true};
+    if(m.c){ ignored.push({e,reason:'Déjà présent : '+m.c.firstName+' '+m.c.lastName}); return; }
+    const sp=splitL29Name(e.raw);
+    create.push({e,last:sp.last,first:sp.first});
+  });
+  s.sortis.forEach(o=>{
+    const m=resto?matchCollab(resto,o.raw):{none:true};
+    if(m.c) archive.push({o,c:m.c});
+    else badSort.push({o,reason:m.ambiguous?'Plusieurs correspondances — à traiter manuellement':'Introuvable parmi les actifs (déjà archivé ?)'});
+  });
+  return {create,ignored,archive,badSort};
+}
+function renderSiteBody(idx){
+  const s=IMP.sites[idx]; const cl=classifySite(idx);
+  if(!s.rid){ return `<div class="imp-none">Site non associé à un restaurant — sélectionnez un restaurant ci-dessus ou laissez « Ignorer » pour ne rien importer pour ce site. (${s.entres.length} entré(s), ${s.sortis.length} sorti(s) dans le fichier.)</div>`; }
+  const createH = cl.create.length ? cl.create.map(x=>`
+    <div class="imp-row entre ${x.e.trunc?'warn':''}">
+      <input type="checkbox" class="chk" checked>
+      <input type="text" class="nm" value="${esc(x.last)}" placeholder="NOM" title="Nom">
+      <input type="text" class="fn" value="${esc(x.first)}" placeholder="Prénom" title="Prénom">
+      <input type="date" class="dt" value="${esc(x.e.debut||'')}" title="Date d'entrée">
+      ${x.e.trunc?'<span class="imp-note">⚠ nom tronqué dans le PDF — à compléter</span>':''}
+    </div>`).join('') : '<div class="imp-none">Aucune création.</div>';
+  const archiveH = cl.archive.length ? cl.archive.map(x=>`
+    <div class="imp-row sorti" data-cid="${x.c.id}" data-nm="${esc(x.c.firstName+' '+x.c.lastName)}">
+      <input type="checkbox" class="chk" checked>
+      <span class="imp-nm">${esc(x.c.firstName+' '+x.c.lastName)}</span>
+      <span class="imp-arrow">← ${esc(x.o.raw)}</span>
+    </div>`).join('') : '<div class="imp-none">Aucun archivage.</div>';
+  const badH = cl.badSort.length ? `<div class="imp-grp"><h5>Sorties non appariées</h5>${cl.badSort.map(x=>`<div class="imp-row ign"><span class="imp-nm imp-strike">${esc(x.o.raw)}</span><span class="imp-note ${/Introuvable/.test(x.reason)?'err':''}">${esc(x.reason)}</span></div>`).join('')}</div>` : '';
+  const ignH = cl.ignored.length ? `<div class="imp-grp"><h5>Entrées ignorées</h5>${cl.ignored.map(x=>`<div class="imp-row ign"><span class="imp-nm imp-strike">${esc(x.e.raw)}</span><span class="imp-note mut">${esc(x.reason)}</span></div>`).join('')}</div>` : '';
+  return `
+    <div class="imp-grp"><h5>À créer (entrées) · ${cl.create.length}</h5>${createH}</div>
+    <div class="imp-grp"><h5>À archiver (sorties) · ${cl.archive.length}</h5>${archiveH}</div>
+    ${badH}${ignH}`;
+}
+function remapSite(idx,rid){ IMP.sites[idx].rid=rid; const b=document.getElementById('impBody'+idx); if(b)b.innerHTML=renderSiteBody(idx); const sum=document.getElementById('impSum'); if(sum)sum.innerHTML=computeImportTotals().html; }
+
+async function applyImport(){
+  if(needAdmin())return;
+  const toCreate={}, toArchive=[]; let nCreate=0,nArch=0;
+  document.querySelectorAll('#impModal .imp-site').forEach(se=>{
+    const rid=se.querySelector('select.rmap').value; if(!rid)return;
+    se.querySelectorAll('.imp-row.entre').forEach(row=>{
+      const cb=row.querySelector('input.chk'); if(!cb||!cb.checked)return;
+      const last=row.querySelector('input.nm').value.trim();
+      const first=row.querySelector('input.fn').value.trim();
+      const dt=row.querySelector('input.dt').value;
+      if(!last&&!first)return;
+      (toCreate[rid]=toCreate[rid]||[]).push({restaurant_id:rid,first_name:first,last_name:last,role:'',entry_date:dt||todayISO(),passport:operationalTemplate()});
+      nCreate++;
+    });
+    se.querySelectorAll('.imp-row.sorti').forEach(row=>{
+      const cb=row.querySelector('input.chk'); if(!cb||!cb.checked)return;
+      const cid=row.getAttribute('data-cid'); if(cid){ toArchive.push({cid,name:row.getAttribute('data-nm')||''}); nArch++; }
+    });
+  });
+  if(!nCreate&&!nArch){ toast('Rien à appliquer — tout est décoché ou ignoré','err'); return; }
+  const btn=document.getElementById('impApplyBtn'); if(btn){ btn.disabled=true; btn.textContent='Application…'; }
+  try{
+    for(const rid in toCreate){
+      const {data,error}=await sb.from('pp_collaborators').insert(toCreate[rid]).select();
+      if(error)throw error;
+      for(const c of (data||[])) await audit('collaborateur',c.id,'Création (import L29)',(c.first_name+' '+c.last_name).trim());
+    }
+    for(const a of toArchive){
+      const {error}=await sb.from('pp_collaborators').update({archived:true}).eq('id',a.cid);
+      if(!error) await audit('collaborateur',a.cid,'Archivage (import L29)',a.name);
+    }
+    closeImport();
+    toast(`✅ Import L29 : ${nCreate} créé(s) · ${nArch} archivé(s)`,'gold');
+    reloadAndRender();
+  }catch(e){ toast('⚠ '+(e.message||String(e)),'err'); if(btn){ btn.disabled=false; btn.textContent='✓ Valider et appliquer'; } }
+}
 
 /* ===================== MODALS ===================== */
 const overlay=document.getElementById('overlay'),modal=document.getElementById('modal');
