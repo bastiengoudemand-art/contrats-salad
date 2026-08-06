@@ -2,8 +2,15 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Planning Manager — Salad &amp; co</title>
+<meta name="theme-color" content="#1f7a4d">
+<link rel="manifest" href="manifest-planning.webmanifest">
+<link rel="apple-touch-icon" href="planning-apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Planning">
 <style>
   :root{
     --green:#1f7a4d; --green-d:#155c39; --green-l:#e8f3ec;
@@ -188,6 +195,7 @@
   </nav>
   <div class="spacer"></div>
   <span id="modeChip" class="mode-chip"><span class="dot"></span><span id="modeTxt">Consultation</span></span>
+  <button id="installBtn" class="btn-light" style="display:none">📲 Installer</button>
   <button id="shareBtn" class="btn-light">🔗 Lien collaborateurs</button>
   <button id="unlockBtn" class="btn-light">🔒 Espace direction</button>
 </header>
@@ -271,6 +279,19 @@
       <button class="btn-ghost" onclick="closeModal('ovUnlock')">Annuler</button>
       <button class="btn" id="uGo">Déverrouiller</button>
     </div>
+  </div>
+</div>
+
+<!-- Install (iOS) modal -->
+<div class="ov" id="ovInstall">
+  <div class="modal">
+    <h3>📲 Installer sur iPhone / iPad</h3>
+    <div class="mb" style="display:flex;flex-direction:column;gap:12px;font-size:13.5px">
+      <div>1️⃣ Touchez le bouton <b>Partager</b> <span style="display:inline-block;border:1px solid var(--line);border-radius:6px;padding:1px 7px">⬆️</span> en bas de Safari</div>
+      <div>2️⃣ Faites défiler et choisissez <b>« Sur l'écran d'accueil »</b></div>
+      <div>3️⃣ Touchez <b>Ajouter</b> — l'icône <b>Planning</b> apparaît comme une app</div>
+    </div>
+    <div class="mf"><button class="btn" onclick="closeModal('ovInstall')">Compris</button></div>
   </div>
 </div>
 
@@ -1068,6 +1089,29 @@ document.getElementById("todayD").onclick=()=>{ document.getElementById("homeDat
 let toastT;
 function toast(msg,err){ const t=document.getElementById("toast"); t.textContent=msg; t.className="toast show"+(err?" err":"");
   clearTimeout(toastT); toastT=setTimeout(()=>t.className="toast",2200); }
+
+/* ===================== PWA — Installation sur l'écran d'accueil ===================== */
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+let pwaPrompt=null;
+function pwaStandalone(){ try{ return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }catch(e){ return false; } }
+function pwaIsIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
+function updateInstallBtn(){
+  const b=document.getElementById('installBtn'); if(!b)return;
+  b.style.display=(!pwaStandalone()&&(pwaPrompt||pwaIsIOS()))?'':'none';
+}
+document.getElementById('installBtn').onclick=async()=>{
+  if(pwaPrompt){
+    const p=pwaPrompt; pwaPrompt=null;
+    try{ p.prompt(); const ch=await p.userChoice; if(ch&&ch.outcome==='accepted'){ toast('📲 Application installée !'); } else { pwaPrompt=p; } }catch(e){ pwaPrompt=p; }
+    updateInstallBtn(); return;
+  }
+  openModal('ovInstall');
+};
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); pwaPrompt=e; updateInstallBtn(); });
+window.addEventListener('appinstalled',()=>{ pwaPrompt=null; toast('📲 Planning installé sur votre écran d’accueil'); updateInstallBtn(); });
+updateInstallBtn();
 </script>
 </body>
 </html>
