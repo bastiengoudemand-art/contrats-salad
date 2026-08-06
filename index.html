@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Salad&amp;Co — Applications</title>
+<meta name="description" content="Portail des applications internes Salad&Co">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b1d1a">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Salad&Co">
+<link rel="stylesheet" href="assets/css/saladco.css">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--sc-font); color:var(--sc-text); background:var(--sc-paper);
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  .hero{
+    background:radial-gradient(120% 120% at 100% 0%, #2f6f1e 0%, var(--sc-ink) 55%);
+    color:#fff; padding:calc(30px + env(safe-area-inset-top)) 20px 34px;
+  }
+  .hero-in{ max-width:1040px; margin:0 auto; }
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .brand img{ width:52px; height:52px; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.35); }
+  .brand h1{ font-size:24px; margin:0; letter-spacing:-.4px; font-weight:800; }
+  .brand p{ margin:3px 0 0; font-size:13.5px; color:rgba(255,255,255,.75); }
+  .hero .lead{ margin:20px 2px 0; font-size:15px; color:rgba(255,255,255,.82); max-width:560px; }
+
+  main{ max-width:1040px; margin:0 auto; padding:26px 20px 60px; }
+  .section-t{ font-size:12.5px; text-transform:uppercase; letter-spacing:.6px; color:var(--sc-text-2);
+    font-weight:700; margin:6px 4px 14px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; }
+  .app{
+    position:relative; display:flex; flex-direction:column; gap:10px; text-decoration:none;
+    background:var(--sc-card); border:1px solid var(--sc-border); border-radius:var(--sc-radius);
+    padding:18px; color:var(--sc-text); box-shadow:var(--sc-shadow);
+    transition:transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+    overflow:hidden;
+  }
+  .app::before{ content:""; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--ac,#6cbe2e); }
+  .app:hover{ transform:translateY(-3px); border-color:var(--ac,#6cbe2e);
+    box-shadow:0 2px 4px rgba(20,22,15,.06),0 16px 40px rgba(20,22,15,.14); }
+  .app .ic{ width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+    font-size:26px; color:#fff; background:var(--ac,#6cbe2e); box-shadow:0 6px 16px rgba(20,22,15,.18); }
+  .app .nm{ font-size:17px; font-weight:800; letter-spacing:-.3px; }
+  .app .ds{ font-size:13px; color:var(--sc-text-2); line-height:1.4; }
+  .app .go{ margin-top:auto; font-size:12.5px; font-weight:700; color:var(--ac,#6cbe2e); display:flex; align-items:center; gap:6px; }
+  footer{ text-align:center; color:var(--sc-text-2); font-size:12px; padding:0 20px 40px; }
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-in">
+      <div class="brand">
+        <img src="assets/icons/icon-192.png" alt="Salad&Co">
+        <div>
+          <h1>Salad&amp;Co</h1>
+          <p>Suite d'applications internes</p>
+        </div>
+      </div>
+      <p class="lead">Choisissez une application. Vous pouvez basculer de l'une à l'autre à tout moment grâce au bouton <strong>Applications</strong> présent en bas de chaque écran.</p>
+    </div>
+  </div>
+
+  <main>
+    <div class="section-t">Applications</div>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <footer>Salad&amp;Co · suite interne · à installer sur l'écran d'accueil pour un accès rapide</footer>
+
+<script>
+  var APPS=[
+    { name:"Contrats",  url:"contrats-saladco.html", icon:"📄", color:"#2a78d6", desc:"Dashboard des contrats, échéances et préavis." },
+    { name:"Accès",     url:"acces-saladco.html",    icon:"🔑", color:"#6cbe2e", desc:"Gestion des accès collaborateurs." },
+    { name:"Passeport", url:"passeport-saladco.html",icon:"🪪", color:"#1b1d1a", desc:"Passeport & suivi de formation des collaborateurs." },
+    { name:"Planning",  url:"planning-saladco.html", icon:"📅", color:"#1f7a4d", desc:"Planning des équipes en restaurant." },
+    { name:"Primes",    url:"primes-saladco.html",   icon:"🏆", color:"#2e7d32", desc:"Suivi de la performance et des primes." },
+    { name:"Levées",    url:"levees-saladco.html",   icon:"✅", color:"#2a78d6", desc:"Suivi des levées de réserves." }
+  ];
+  var g=document.getElementById("grid");
+  APPS.forEach(function(a){
+    var el=document.createElement("a");
+    el.className="app"; el.href=a.url; el.style.setProperty("--ac",a.color);
+    el.innerHTML='<div class="ic">'+a.icon+'</div>'+
+      '<div class="nm">'+a.name+'</div>'+
+      '<div class="ds">'+a.desc+'</div>'+
+      '<div class="go">Ouvrir →</div>';
+    g.appendChild(el);
+  });
+  if("serviceWorker" in navigator){
+    window.addEventListener("load",function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "name": "Planning Manager Salad&Co",
+  "short_name": "Planning",
+  "description": "Planning des équipes Salad&Co",
+  "start_url": "../planning-saladco.html",
+  "scope": "../",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f7f4",
+  "theme_color": "#1f7a4d",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "../assets/icons/planning-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../assets/icons/planning-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../assets/icons/planning-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

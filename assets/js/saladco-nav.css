@@ -1,0 +1,56 @@
+/* Styles du lanceur d'applications injecté dans chaque appli (scopés .sc-*). */
+.sc-fab{
+  position:fixed; z-index:2147483000; right:16px; bottom:16px;
+  width:56px; height:56px; border-radius:50%; border:none; cursor:pointer;
+  background:var(--sc-green,#6cbe2e); color:#fff;
+  box-shadow:0 6px 20px rgba(20,22,15,.28); display:flex; align-items:center; justify-content:center;
+  transition:transform .15s ease, background .15s ease;
+}
+.sc-fab:hover{ background:var(--sc-green-d,#4f9a1c); transform:translateY(-1px); }
+.sc-fab:active{ transform:scale(.94); }
+.sc-fab svg{ width:26px; height:26px; }
+.sc-fab .sc-dot{ position:absolute; top:10px; right:10px; width:8px; height:8px; border-radius:50%; background:#fff; opacity:.0; }
+
+.sc-overlay{
+  position:fixed; inset:0; z-index:2147483001; display:none;
+  background:rgba(15,16,13,.55); backdrop-filter:blur(4px);
+  align-items:flex-end; justify-content:center;
+}
+.sc-overlay.sc-open{ display:flex; animation:sc-fade .18s ease; }
+@keyframes sc-fade{ from{opacity:0} to{opacity:1} }
+@keyframes sc-rise{ from{transform:translateY(24px);opacity:.4} to{transform:translateY(0);opacity:1} }
+
+.sc-sheet{
+  width:100%; max-width:720px; background:var(--sc-paper,#f6f7f4);
+  border-radius:22px 22px 0 0; padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+  box-shadow:var(--sc-shadow); animation:sc-rise .22s ease; max-height:86vh; overflow:auto;
+  font-family:var(--sc-font,system-ui,sans-serif);
+}
+@media (min-width:720px){
+  .sc-overlay{ align-items:center; }
+  .sc-sheet{ border-radius:22px; }
+}
+.sc-head{ display:flex; align-items:center; justify-content:space-between; margin:2px 4px 14px; }
+.sc-brand{ display:flex; align-items:center; gap:10px; font-weight:800; color:var(--sc-text,#14160f); font-size:16px; letter-spacing:-.2px; }
+.sc-brand .sc-logo{ width:30px; height:30px; border-radius:8px; display:block; }
+.sc-close{ border:none; background:var(--sc-card,#fff); color:var(--sc-text-2,#5b5f55);
+  width:34px; height:34px; border-radius:10px; font-size:18px; cursor:pointer; box-shadow:var(--sc-shadow); }
+.sc-close:hover{ color:var(--sc-text,#14160f); }
+
+.sc-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+@media (min-width:560px){ .sc-grid{ grid-template-columns:repeat(3,1fr); } }
+.sc-app{
+  display:flex; flex-direction:column; gap:8px; text-decoration:none;
+  background:var(--sc-card,#fff); border:1px solid var(--sc-border,rgba(20,22,15,.12));
+  border-radius:var(--sc-radius,16px); padding:14px; color:var(--sc-text,#14160f);
+  box-shadow:var(--sc-shadow); transition:transform .12s ease, border-color .12s ease;
+}
+.sc-app:hover{ transform:translateY(-2px); border-color:var(--sc-green,#6cbe2e); }
+.sc-app .sc-ic{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; }
+.sc-app .sc-nm{ font-weight:700; font-size:14.5px; letter-spacing:-.2px; }
+.sc-app .sc-ds{ font-size:12px; color:var(--sc-text-2,#5b5f55); line-height:1.35; }
+.sc-app.sc-current{ border-color:var(--sc-green,#6cbe2e); background:var(--sc-green-l,#eaf7dd); }
+.sc-app.sc-current .sc-badge{ margin-left:auto; font-size:10.5px; font-weight:800; color:var(--sc-green-d,#4f9a1c);
+  background:#fff; border-radius:20px; padding:2px 8px; }
+.sc-row{ display:flex; align-items:center; gap:10px; }
+.sc-foot{ text-align:center; color:var(--sc-text-2,#5b5f55); font-size:11.5px; margin:16px 4px 2px; }

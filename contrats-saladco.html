@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Contrats — Salad &amp; Co</title>
+<style>
+:root{
+  --surface-1:#fcfcfb; --plane:#f4f4f1; --card:#ffffff;
+  --text-primary:#0b0b0b; --text-secondary:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --baseline:#c3c2b7; --border:rgba(11,11,11,.10);
+  --s1:#2a78d6; --s2:#008300; --s5:#1baf7a; --s7:#4a3aa7;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b; --good-ink:#006300;
+  --shadow:0 1px 2px rgba(11,11,11,.06),0 6px 20px rgba(11,11,11,.05);
+  color-scheme:light;
+}
+html[data-theme="dark"]{
+  --surface-1:#1a1a19; --plane:#0d0d0d; --card:#201f1d;
+  --text-primary:#ffffff; --text-secondary:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --baseline:#383835; --border:rgba(255,255,255,.10);
+  --s1:#3987e5; --s2:#008300; --s5:#199e70; --s7:#9085e9;
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b; --good-ink:#0ca30c;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--text-primary);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:1220px;margin:0 auto;padding:22px 20px 80px}
+header.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+h1{font-size:22px;margin:0 0 3px}
+.sub{color:var(--text-secondary);font-size:13.5px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button,select,input{font-family:inherit;font-size:14px}
+.btn{background:var(--card);border:1px solid var(--border);color:var(--text-primary);
+  border-radius:9px;padding:7px 12px;cursor:pointer;box-shadow:var(--shadow)}
+.btn:hover{border-color:var(--baseline)}
+.btn.primary{background:var(--s1);color:#fff;border-color:transparent;font-weight:600}
+.btn.sm{padding:4px 9px;font-size:12.5px;box-shadow:none}
+.btn.danger{color:var(--critical)}
+.who{font-size:12.5px;color:var(--text-secondary);display:flex;align-items:center;gap:8px}
+.who b{color:var(--text-primary)}
+nav.tabs{display:flex;gap:4px;margin:18px 0 16px;flex-wrap:wrap;border-bottom:1px solid var(--grid)}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--text-secondary);
+  padding:9px 12px;cursor:pointer;font-size:14.5px;font-weight:600}
+.tab.active{color:var(--text-primary);border-bottom-color:var(--s1)}
+.tab .cnt{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;border-radius:9px;
+  background:var(--grid);color:var(--text-secondary);font-size:11.5px;font-weight:700;vertical-align:1px}
+section{display:none}
+section.active{display:block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:8px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow)}
+.kpi .lab{color:var(--muted);font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.kpi .val{font-size:27px;font-weight:700;margin-top:6px;letter-spacing:-.5px}
+.kpi.alert .val{color:var(--critical)} .kpi.warn .val{color:var(--warning)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:18px 18px 16px;box-shadow:var(--shadow);margin-top:16px}
+.card h2{font-size:16px;margin:0 0 3px}
+.card .hint{color:var(--text-secondary);font-size:13px;margin:0 0 14px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:2px 0 14px}
+.filters label{font-size:12.5px;color:var(--muted);font-weight:600;margin-right:-4px}
+.filters select,.filters input{background:var(--surface-1);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;padding:6px 9px}
+.filters input{min-width:180px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--grid);vertical-align:middle}
+th{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;font-weight:700;cursor:pointer;white-space:nowrap;user-select:none;position:sticky;top:0;background:var(--card)}
+th.noSort{cursor:default}
+th .arw{opacity:.5;font-size:10px}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
+.tableScroll{max-height:640px;overflow:auto;border:1px solid var(--grid);border-radius:10px}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.st-critical{background:color-mix(in srgb,var(--critical) 15%,transparent);color:var(--critical)} .st-critical .dot{background:var(--critical)}
+.st-serious{background:color-mix(in srgb,var(--serious) 18%,transparent);color:var(--serious)} .st-serious .dot{background:var(--serious)}
+.st-warning{background:color-mix(in srgb,var(--warning) 20%,transparent);color:#9a6a00} html[data-theme="dark"] .st-warning{color:var(--warning)} .st-warning .dot{background:var(--warning)}
+.st-ok{background:color-mix(in srgb,var(--good) 15%,transparent);color:var(--good-ink)} .st-ok .dot{background:var(--good)}
+.st-muted{background:var(--grid);color:var(--text-secondary)} .st-muted .dot{background:var(--muted)}
+.bars{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+.barrow{display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center}
+.barrow .rl{font-size:13.5px;font-weight:600;text-align:right;color:var(--text-secondary)}
+.bartrack{background:var(--grid);border-radius:5px;height:22px;position:relative;overflow:hidden}
+.barfill{height:100%;border-radius:0 5px 5px 0;min-width:2px}
+.barrow .rv{font-size:13px;font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:780px){.grid2{grid-template-columns:1fr}.barrow{grid-template-columns:96px 1fr auto}}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px}
+.empty{padding:24px;text-align:center;color:var(--muted)}
+.tag{display:inline-block;padding:1px 7px;border-radius:6px;background:var(--grid);color:var(--text-secondary);font-size:11.5px;font-weight:600}
+.datachip{font-variant-numeric:tabular-nums}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow:auto}
+.overlay.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:640px;padding:20px 22px 22px}
+.modal h3{margin:0 0 4px;font-size:18px}
+.modal .msub{color:var(--text-secondary);font-size:13px;margin:0 0 16px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.form .fld{display:flex;flex-direction:column;gap:4px}
+.form label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.form label .req{color:var(--critical)}
+.form input,.form select,.form textarea{background:var(--surface-1);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;padding:8px 10px;font-size:14px;width:100%;font-family:inherit}
+.form .full{grid-column:1/-1}
+.form textarea{resize:vertical;min-height:56px}
+.modal .actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+.modal .err{color:var(--critical);font-size:13px;font-weight:600;min-height:18px}
+.hist-item{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:10px 2px;border-bottom:1px solid var(--grid)}
+.hist-when{font-size:12.5px;color:var(--muted)}
+.hist-when b{display:block;color:var(--text-primary);font-size:13px}
+.hist-body{font-size:13.5px}
+.hist-body .chg{color:var(--text-secondary)}
+.hist-body .old{color:var(--critical);text-decoration:line-through} .hist-body .new{color:var(--good-ink);font-weight:600}
+.hist-note{margin-top:3px;color:var(--text-secondary);font-style:italic;font-size:13px}
+.actioncell{display:flex;gap:6px;align-items:center}
+.linkBtn{text-decoration:none;color:var(--s1);border-color:color-mix(in srgb,var(--s1) 30%,transparent)}
+.linkBtn:hover{background:color-mix(in srgb,var(--s1) 8%,transparent)}
+.nolink{color:var(--muted);font-size:12px}
+/* login */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.12);padding:30px 30px 26px;width:100%;max-width:400px}
+.login-box h1{font-size:20px;margin:0 0 4px}
+.login-box p{color:var(--text-secondary);font-size:13.5px;margin:0 0 18px}
+.login-box label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.login-box input{width:100%;margin-top:6px;padding:11px 12px;font-size:15px;border-radius:9px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary)}
+.login-box button{width:100%;margin-top:16px;padding:11px;font-size:15px;font-weight:600;color:#fff;background:var(--s1);border:none;border-radius:9px;cursor:pointer}
+.login-box button:disabled{opacity:.6}
+.login-msg{margin-top:14px;font-size:13.5px;min-height:18px}
+.login-msg.ok{color:var(--good-ink)} .login-msg.err{color:var(--critical)}
+.hidden{display:none!important}
+.lock{font-size:30px;margin-bottom:8px}
+</style>
+<!-- SALADCO — chrome commun (début) -->
+<link rel="stylesheet" href="assets/css/saladco.css">
+<link rel="manifest" href="assets/manifests/contrats.webmanifest">
+<meta name="theme-color" content="#2a78d6">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Contrats">
+<script defer src="assets/js/saladco-nav.js" data-app="contrats"></script>
+<!-- SALADCO — chrome commun (fin) -->
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="login-wrap">
+  <div class="login-box">
+    <div class="lock">🔒</div>
+    <h1>Dashboard Contrats — Salad &amp; Co</h1>
+    <div id="signinForm">
+      <p>Connecte-toi avec ton adresse e-mail professionnelle et ton mot de passe.</p>
+      <label for="loginEmail">Adresse e-mail</label>
+      <input id="loginEmail" type="email" placeholder="prenom.nom@saladandco.fr" autocomplete="email">
+      <label for="loginPass" style="display:block;margin-top:12px">Mot de passe</label>
+      <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+      <button id="loginBtn">Se connecter</button>
+      <div class="login-msg" id="loginMsg"></div>
+      <p style="margin:12px 0 0;font-size:12.5px"><a href="#" id="resetLink" style="color:var(--s1);font-weight:600;text-decoration:none">Première connexion ou mot de passe oublié ?</a></p>
+    </div>
+    <div id="setpassForm" class="hidden">
+      <p>Choisis ton mot de passe pour accéder au dashboard.</p>
+      <label for="newPass">Nouveau mot de passe</label>
+      <input id="newPass" type="password" placeholder="Au moins 8 caractères" autocomplete="new-password">
+      <button id="setpassBtn">Enregistrer le mot de passe</button>
+      <div class="login-msg" id="setpassMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap hidden">
+  <header class="top">
+    <div>
+      <h1>Dashboard Contrats — Salad &amp; Co</h1>
+      <div class="sub">Suivi des échéances &amp; préavis · version partagée · <span id="today"></span></div>
+    </div>
+    <div class="toolbar">
+      <span class="who">Connecté : <b id="whoName"></b></span>
+      <button class="btn primary" id="addBtn">＋ Ajouter</button>
+      <button class="btn" id="refreshBtn" title="Rafraîchir les données">⟳</button>
+      <button class="btn" id="themeBtn">🌙</button>
+      <button class="btn" id="pwBtn" title="Définir / changer mon mot de passe">🔑 Mot de passe</button>
+      <button class="btn" id="logoutBtn">Déconnexion</button>
+    </div>
+  </header>
+
+  <div id="pwPanel" class="hidden" style="max-width:1220px;margin:0 auto 14px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <b style="font-size:14px">Définir / changer mon mot de passe :</b>
+    <input id="pwNew" type="password" placeholder="Nouveau mot de passe (min. 8 caractères)" autocomplete="new-password" style="padding:9px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);font-size:14px;min-width:240px">
+    <button class="btn primary" id="pwSave">Enregistrer</button>
+    <span id="pwMsg" style="font-size:13px"></span>
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="apercu">Vue d'ensemble</button>
+    <button class="tab" data-tab="echeances">À traiter <span class="cnt" id="cntEch"></span></button>
+    <button class="tab" data-tab="valider">À valider <span class="cnt" id="cntValid"></span></button>
+    <button class="tab" data-tab="compare">Comparaison</button>
+    <button class="tab" data-tab="tous">Tous les contrats <span class="cnt" id="cntTous"></span></button>
+    <button class="tab" data-tab="historique">Historique <span class="cnt" id="cntHist"></span></button>
+    <button class="tab" data-tab="archives">Archives <span class="cnt" id="cntArch"></span></button>
+    <button class="tab" data-tab="acces" id="tabAcces" style="display:none">Accès <span class="cnt" id="cntUsers"></span></button>
+  </nav>
+
+  <section id="apercu" class="active">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="card"><h2>Répartition par urgence de préavis</h2><p class="hint">Calculé à partir de la prochaine échéance et du délai de préavis.</p><div class="bars" id="statutBars"></div></div>
+      <div class="card"><h2>Coût annuel HT par restaurant</h2><p class="hint">Somme des « Total » des contrats actifs.</p><div class="bars" id="apercuCout"></div></div>
+    </div>
+    <div class="card"><h2>Prochaines actions (90 jours)</h2><p class="hint">Contrats dont la date limite de préavis approche ou vient de passer.</p><div id="apercuActions"></div></div>
+  </section>
+
+  <section id="echeances">
+    <div class="card">
+      <h2>Échéances &amp; préavis à traiter</h2>
+      <p class="hint">Trié par date limite de préavis. « Préavis passé » = fenêtre de résiliation dépassée (reconduction tacite engagée).</p>
+      <div class="filters">
+        <label>Restaurant</label><select id="fRest"></select>
+        <label>Statut</label><select id="fStat"><option value="">Tous</option><option value="preavis_passe">Préavis passé</option><option value="urgent">Urgent (≤60 j)</option><option value="bientot">Bientôt (≤120 j)</option><option value="expire">Échéance passée</option><option value="ok">OK</option><option value="inconnu">Sans date</option></select>
+        <label>Horizon</label><select id="fHoriz"><option value="all">Tout</option><option value="90">90 j</option><option value="180" selected>180 j</option><option value="365">1 an</option></select>
+        <input id="fSearch" type="search" placeholder="Rechercher…">
+      </div>
+      <div class="tableScroll"><table id="echTable"><thead><tr>
+        <th class="sortable" data-k="restaurant">Restaurant <span class="arw"></span></th>
+        <th class="sortable" data-k="prestataire">Prestataire <span class="arw"></span></th>
+        <th class="sortable" data-k="contrat">Contrat <span class="arw"></span></th>
+        <th class="sortable num" data-k="total">Coût HT/an <span class="arw"></span></th>
+        <th class="sortable" data-k="prochaine">Échéance <span class="arw"></span></th>
+        <th class="sortable" data-k="deadline">Limite préavis <span class="arw"></span></th>
+        <th class="sortable num" data-k="days_to_deadline">Jours <span class="arw">▲</span></th>
+        <th class="sortable" data-k="statut">Statut <span class="arw"></span></th>
+        <th class="noSort">Actions</th>
+      </tr></thead><tbody id="echBody"></tbody></table></div>
+      <div class="note" id="echCount"></div>
+    </div>
+  </section>
+
+  <section id="compare">
+    <div class="card"><h2>Comparaison des restaurants</h2>
+      <p class="hint">Classement par <select id="cmpMetric" style="font-size:13px;padding:3px 6px;border-radius:6px;background:var(--surface-1);border:1px solid var(--border);color:var(--text-primary)"><option value="cout">coût annuel HT</option><option value="n">nombre de contrats</option><option value="moy">coût moyen par contrat</option><option value="local">part gérée en local</option></select></p>
+      <div class="bars" id="cmpBars"></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>Coût par type de contrat</h2><p class="hint">Total annuel HT cumulé.</p><div class="bars" id="cmpType"></div></div>
+      <div class="card"><h2>Coût par prestataire (top 10)</h2><p class="hint">Total annuel HT cumulé.</p><div class="bars" id="cmpPresta"></div></div>
+    </div>
+    <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><h2 style="margin:0">Matrice restaurant × type de contrat</h2><button class="btn primary" id="btnExportPdf" type="button">📄 Export PDF directeurs</button></div><p class="hint">Coût annuel HT. Le PDF reprend cette matrice + une fiche de contrôle à faire remplir par chaque directeur (statut de chaque contrat + commentaire).</p><div class="tableScroll"><table id="matrix"></table></div></div>
+  </section>
+
+  <section id="tous">
+    <div class="card"><h2>Tous les contrats</h2>
+      <div class="filters">
+        <label>Restaurant</label><select id="tRest"></select>
+        <label>Gestion</label><select id="tGest"><option value="">Toutes</option><option>Local</option><option>National</option></select>
+        <input id="tSearch" type="search" placeholder="Rechercher…">
+      </div>
+      <div class="tableScroll"><table id="allTable"><thead><tr>
+        <th class="sortable" data-k="restaurant">Restaurant <span class="arw"></span></th>
+        <th class="sortable" data-k="prestataire">Prestataire <span class="arw"></span></th>
+        <th class="sortable" data-k="contrat">Contrat <span class="arw"></span></th>
+        <th class="sortable num" data-k="eur_ht">€ HT <span class="arw"></span></th>
+        <th class="sortable" data-k="rythme">Rythme <span class="arw"></span></th>
+        <th class="sortable num" data-k="total">Total/an <span class="arw"></span></th>
+        <th class="sortable" data-k="gestion">Gestion <span class="arw"></span></th>
+        <th class="sortable" data-k="prochaine">Échéance <span class="arw"></span></th>
+        <th class="sortable" data-k="statut">Statut <span class="arw"></span></th>
+        <th class="noSort">Actions</th>
+      </tr></thead><tbody id="allBody"></tbody></table></div>
+      <div class="note" id="allCount"></div>
+    </div>
+  </section>
+
+  <section id="valider">
+    <div class="card"><h2>Contrats à valider</h2>
+      <p class="hint">Contrats importés automatiquement depuis le Drive partagé. Vérifie et complète (surtout le <b>montant</b>), puis « Valider » pour les intégrer au dashboard — ou « Supprimer » si non pertinent.</p>
+      <div class="tableScroll"><table><thead><tr>
+        <th>Restaurant</th><th>Prestataire</th><th>Contrat</th><th>Gestion</th><th class="num">Montant HT</th><th class="num">Préavis</th><th>Durée</th><th class="noSort">Actions</th>
+      </tr></thead><tbody id="validBody"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="historique">
+    <div class="card"><h2>Historique des modifications</h2>
+      <p class="hint">Journal partagé : chaque ajout, modification, archivage — avec l'auteur et la date.</p>
+      <div class="filters">
+        <label>Contrat</label><select id="hRest"></select>
+        <label>Type d'action</label><select id="hAction"><option value="">Toutes</option><option value="create">Création</option><option value="update">Modification</option><option value="archive">Archivage</option><option value="restore">Restauration</option><option value="delete">Suppression</option></select>
+        <button class="btn sm" id="hRefresh">⟳ Rafraîchir</button>
+      </div>
+      <div id="histList"></div>
+      <div class="note" id="histCount"></div>
+    </div>
+  </section>
+
+  <section id="archives">
+    <div class="card"><h2>Contrats archivés</h2><p class="hint">Exclus du dashboard et des totaux. Restaurables.</p>
+      <div class="tableScroll"><table><thead><tr><th>Restaurant</th><th>Prestataire</th><th>Contrat</th><th class="num">Coût HT/an</th><th>Échéance</th><th class="noSort">Actions</th></tr></thead><tbody id="archBody"></tbody></table></div>
+      <div class="note" id="archCount"></div>
+    </div>
+  </section>
+
+  <section id="acces">
+    <div class="card"><h2>Gestion des accès</h2>
+      <p class="hint">Réservé aux administrateurs. Ajoute un utilisateur (il pourra se connecter avec l'e-mail et le mot de passe que tu choisis), réinitialise un mot de passe, ou retire un accès. Les mots de passe sont chiffrés par Supabase — ils ne sont jamais affichés ensuite.</p>
+      <div class="filters" style="align-items:flex-end;gap:12px">
+        <div><label style="display:block;margin-bottom:3px">E-mail</label><input id="auEmail" type="email" placeholder="prenom.nom@saladandco.fr" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);min-width:220px"></div>
+        <div><label style="display:block;margin-bottom:3px">Nom affiché</label><input id="auName" type="text" placeholder="Prénom" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);min-width:130px"></div>
+        <div><label style="display:block;margin-bottom:3px">Mot de passe</label><input id="auPass" type="text" placeholder="min. 8 caractères" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-1);color:var(--text-primary);min-width:160px"></div>
+        <button class="btn primary" id="auAdd">＋ Ajouter l'utilisateur</button>
+      </div>
+      <div class="login-msg" id="auMsg" style="min-height:0;margin-top:8px"></div>
+      <div class="tableScroll" style="margin-top:12px"><table><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th class="noSort">Actions</th></tr></thead><tbody id="auBody"></tbody></table></div>
+    </div>
+  </section>
+
+  <p class="note">Données partagées (Supabase). Source initiale : « Contrats Salad » du 20/07/2026. Historique enregistré depuis la mise en base.</p>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay"><div class="modal">
+  <h3 id="mTitle">Ajouter un contrat</h3>
+  <p class="msub">Champs <span style="color:var(--critical)">*</span> obligatoires. Le statut de préavis se calcule automatiquement.</p>
+  <div class="form">
+    <div class="fld"><label>Restaurant <span class="req">*</span></label><input id="mRest" list="dlRest" autocomplete="off"><datalist id="dlRest"></datalist></div>
+    <div class="fld"><label>Prestataire <span class="req">*</span></label><input id="mPresta" list="dlPresta" autocomplete="off"><datalist id="dlPresta"></datalist></div>
+    <div class="fld"><label>Type de contrat <span class="req">*</span></label><input id="mContrat" list="dlContrat" autocomplete="off"><datalist id="dlContrat"></datalist></div>
+    <div class="fld"><label>Gestion</label><select id="mGestion"><option>National</option><option>Local</option></select></div>
+    <div class="fld"><label>€ HT (unitaire)</label><input id="mEur" type="number" step="0.01" min="0"></div>
+    <div class="fld"><label>Rythme</label><select id="mRythme"><option>Année</option><option>Passage</option></select></div>
+    <div class="fld"><label>Quantité</label><input id="mQte" type="number" step="1" min="0"></div>
+    <div class="fld"><label>Total HT / an <span style="text-transform:none;font-weight:400">(auto si vide)</span></label><input id="mTotal" type="number" step="0.01" min="0"></div>
+    <div class="fld"><label>Durée</label><input id="mDuree" list="dlDuree" autocomplete="off"><datalist id="dlDuree"><option>12 mois</option><option>24 mois</option><option>36 mois</option></datalist></div>
+    <div class="fld"><label>Date anniversaire</label><input id="mAnniv" type="date"></div>
+    <div class="fld"><label>Prochaine échéance <span class="req">*</span></label><input id="mProch" type="date"></div>
+    <div class="fld"><label>Préavis (mois) <span class="req">*</span></label><input id="mPreavis" type="number" step="1" min="0"></div>
+    <div class="fld full"><label>Lien du contrat (PDF Drive) <span style="text-transform:none;font-weight:400">(facultatif)</span></label><input id="mLien" type="url" placeholder="https://drive.google.com/file/d/…/view"></div>
+    <div class="fld full"><label>Commentaire <span style="text-transform:none;font-weight:400">(facultatif — motif de la modification)</span></label><textarea id="mNote" placeholder="Ex. Renégociation du tarif, prolongation obtenue par téléphone…"></textarea></div>
+  </div>
+  <div class="actions"><div class="err" id="mErr"></div>
+    <div style="display:flex;gap:8px"><button class="btn" id="mCancel">Annuler</button><button class="btn primary" id="mSave">Enregistrer</button></div>
+  </div>
+</div></div>
+
+<!-- MODAL ARCHIVE avec commentaire -->
+<div class="overlay" id="archOverlay"><div class="modal" style="max-width:460px">
+  <h3 id="archTitle">Archiver le contrat</h3>
+  <p class="msub" id="archSub"></p>
+  <div class="form"><div class="fld full"><label>Commentaire <span style="text-transform:none;font-weight:400">(facultatif — motif de l'archivage)</span></label><textarea id="archNote" placeholder="Ex. Prestataire résilié, doublon, contrat transféré…"></textarea></div></div>
+  <div class="actions"><div class="err"></div>
+    <div style="display:flex;gap:8px"><button class="btn" id="archCancel">Annuler</button><button class="btn primary" id="archConfirm">Archiver</button></div>
+  </div>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script>
+const SUPABASE_URL="https://wplolvjziqqvvcydvfxs.supabase.co";
+const SUPABASE_KEY="sb_publishable__ETgYHnd7kBRJ-4QIkrxPw_UzPxo0dp";
+let NAMES={}, ADMINS=new Set(), USERS=[];
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let ME=null, STATE=[], HISTORY=[];
+const TODAY=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());})();
+
+/* ---------- AUTH ---------- */
+const loginEl=document.getElementById('login'),appEl=document.getElementById('app');
+const signinForm=document.getElementById('signinForm'),setpassForm=document.getElementById('setpassForm');
+const loginMsg=document.getElementById('loginMsg'),setpassMsg=document.getElementById('setpassMsg');
+let RECOVERY=false;
+const validEmail=e=>/^[^@]+@[^@]+\.[^@]+$/.test(e);
+document.getElementById('loginBtn').onclick=async()=>{
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pass=document.getElementById('loginPass').value;
+  if(!Object.keys(NAMES).length)await loadUsers();
+  if(!validEmail(email)){loginMsg.className='login-msg err';loginMsg.textContent='Adresse e-mail invalide.';return;}
+  if(!(email in NAMES)){loginMsg.className='login-msg err';loginMsg.textContent="Cette adresse n'est pas autorisée à accéder au dashboard.";return;}
+  if(!pass){loginMsg.className='login-msg err';loginMsg.textContent='Entre ton mot de passe.';return;}
+  document.getElementById('loginBtn').disabled=true;loginMsg.className='login-msg';loginMsg.textContent='Connexion…';
+  const {error}=await sb.auth.signInWithPassword({email,password:pass});
+  document.getElementById('loginBtn').disabled=false;
+  if(error){loginMsg.className='login-msg err';loginMsg.textContent=/invalid login|credential/i.test(error.message||'')?"E-mail ou mot de passe incorrect. Première connexion ? Clique sur le lien ci-dessous pour définir ton mot de passe.":'Erreur : '+error.message;}
+};
+document.getElementById('resetLink').onclick=async(ev)=>{
+  ev.preventDefault();
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  if(!validEmail(email)){loginMsg.className='login-msg err';loginMsg.textContent='Entre d’abord ton adresse e-mail ci-dessus.';return;}
+  if(!(email in NAMES)){loginMsg.className='login-msg err';loginMsg.textContent="Cette adresse n'est pas autorisée à accéder au dashboard.";return;}
+  loginMsg.className='login-msg';loginMsg.textContent='Envoi en cours…';
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  if(error){loginMsg.className='login-msg err';loginMsg.textContent='Erreur : '+error.message;}
+  else{loginMsg.className='login-msg ok';loginMsg.textContent='✅ E-mail envoyé à '+email+'. Clique sur le lien reçu pour définir ton mot de passe (une seule fois).';}
+};
+document.getElementById('setpassBtn').onclick=async()=>{
+  const np=document.getElementById('newPass').value;
+  if(!np||np.length<8){setpassMsg.className='login-msg err';setpassMsg.textContent='Au moins 8 caractères.';return;}
+  document.getElementById('setpassBtn').disabled=true;setpassMsg.className='login-msg';setpassMsg.textContent='Enregistrement…';
+  const {error}=await sb.auth.updateUser({password:np});
+  document.getElementById('setpassBtn').disabled=false;
+  if(error){setpassMsg.className='login-msg err';setpassMsg.textContent='Erreur : '+error.message;}
+  else{setpassMsg.className='login-msg ok';setpassMsg.textContent='✅ Mot de passe enregistré !';RECOVERY=false;const {data}=await sb.auth.getSession();if(data.session&&data.session.user)onLogin(data.session.user);}
+};
+document.getElementById('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginBtn').click();});
+document.getElementById('loginEmail').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loginPass').focus();});
+document.getElementById('newPass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('setpassBtn').click();});
+document.getElementById('logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload();};
+document.getElementById('pwBtn').onclick=()=>{const p=document.getElementById('pwPanel');p.classList.toggle('hidden');if(!p.classList.contains('hidden'))document.getElementById('pwNew').focus();};
+document.getElementById('pwSave').onclick=async()=>{
+  const np=document.getElementById('pwNew').value,m=document.getElementById('pwMsg');
+  if(!np||np.length<8){m.style.color='var(--critical)';m.textContent='Au moins 8 caractères.';return;}
+  document.getElementById('pwSave').disabled=true;m.style.color='var(--text-secondary)';m.textContent='Enregistrement…';
+  const {error}=await sb.auth.updateUser({password:np});
+  document.getElementById('pwSave').disabled=false;
+  if(error){m.style.color='var(--critical)';m.textContent='Erreur : '+error.message;}
+  else{m.style.color='var(--good-ink)';m.textContent='✅ Mot de passe enregistré. Utilise-le à ta prochaine connexion.';document.getElementById('pwNew').value='';}
+};
+document.getElementById('pwNew').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('pwSave').click();});
+
+sb.auth.onAuthStateChange((ev,session)=>{
+  if(ev==='PASSWORD_RECOVERY'){RECOVERY=true;signinForm.classList.add('hidden');setpassForm.classList.remove('hidden');document.getElementById('newPass').focus();return;}
+  if(RECOVERY)return;
+  if(session&&session.user){onLogin(session.user);}
+});
+(async()=>{
+  if(/type=recovery/.test(location.hash)){RECOVERY=true;signinForm.classList.add('hidden');setpassForm.classList.remove('hidden');}
+  await loadUsers();
+  const {data}=await sb.auth.getSession();
+  if(!RECOVERY&&data.session&&data.session.user)onLogin(data.session.user);
+})();
+
+async function onLogin(user){
+  ME=user.email.toLowerCase();
+  if(!Object.keys(NAMES).length)await loadUsers();
+  if(!(ME in NAMES)){await sb.auth.signOut();appEl.classList.add('hidden');loginEl.classList.remove('hidden');loginMsg.className='login-msg err';loginMsg.textContent="Cette adresse n'est pas/plus autorisée à accéder au dashboard.";return;}
+  document.getElementById('whoName').textContent=(NAMES[ME]||ME);
+  document.getElementById('tabAcces').style.display=ADMINS.has(ME)?'':'none';
+  loginEl.classList.add('hidden'); appEl.classList.remove('hidden');
+  document.getElementById('today').textContent='au '+TODAY.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  await reloadAll();
+}
+
+/* ---------- DATA ---------- */
+async function reloadAll(){ await Promise.all([loadContracts(),loadHistory()]); refresh(); }
+async function loadContracts(){
+  const {data,error}=await sb.from('contracts').select('*').order('restaurant').order('prestataire');
+  if(error){alert('Erreur de chargement : '+error.message);return;}
+  STATE=data.map(c=>({...c, eur_ht:num(c.eur_ht), total:num(c.total), qte:c.qte==null?null:+c.qte, preavis_mois:c.preavis_mois==null?null:+c.preavis_mois}));
+}
+async function loadHistory(){
+  const {data}=await sb.from('contract_history').select('*').order('changed_at',{ascending:false}).limit(1000);
+  HISTORY=data||[];
+}
+async function loadUsers(){try{const {data}=await sb.from('contract_users').select('email,name,is_admin,uid');USERS=data||[];NAMES={};ADMINS=new Set();USERS.forEach(u=>{const e=String(u.email).toLowerCase();NAMES[e]=u.name;if(u.is_admin)ADMINS.add(e);});}catch(e){}}
+async function callAdmin(payload){const {data:{session}}=await sb.auth.getSession();const tok=session?session.access_token:'';const r=await fetch(SUPABASE_URL+'/functions/v1/admin-users',{method:'POST',headers:{'Authorization':'Bearer '+tok,'apikey':SUPABASE_KEY,'content-type':'application/json'},body:JSON.stringify(payload)});return r.json().catch(()=>({error:'réponse illisible'}));}
+function renderAcces(){const body=document.getElementById('auBody');if(!body)return;const cu=document.getElementById('cntUsers');if(cu)cu.textContent=USERS.length;body.innerHTML=USERS.slice().sort((a,b)=>((b.is_admin?1:0)-(a.is_admin?1:0))||String(a.name||'').localeCompare(String(b.name||''),'fr')).map(u=>`<tr><td>${esc(u.name||'')}</td><td>${esc(u.email)}</td><td>${u.is_admin?'<b>Admin</b>':'Utilisateur'}</td><td><div class="actioncell"><button class="btn sm" data-act="reset" data-email="${esc(u.email)}" data-uid="${esc(u.uid||'')}">Réinit. mot de passe</button>${u.is_admin?'':`<button class="btn sm danger" data-act="remove" data-email="${esc(u.email)}" data-uid="${esc(u.uid||'')}" data-name="${esc(u.name||'')}">Retirer</button>`}</div></td></tr>`).join('');}
+const num=v=>v==null||v===''?null:Number(v);
+
+/* ---------- derived ---------- */
+function minusMonths(iso,months){const [y,m,d]=iso.split('-').map(Number);let ty=y,tm=m-months;while(tm<=0){tm+=12;ty--;}while(tm>12){tm-=12;ty++;}const dim=new Date(ty,tm,0).getDate();return new Date(ty,tm-1,Math.min(d,dim));}
+function fmtFR(dt){return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();}
+function isoToFR(s){if(!s)return null;const p=s.split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:s;}
+function days(a,b){return Math.round((a-b)/86400000);}
+function derive(c){
+  const o={...c};
+  const proch=c.prochaine?new Date(+c.prochaine.slice(0,4),+c.prochaine.slice(5,7)-1,+c.prochaine.slice(8,10)):null;
+  o.prochaine_fr=proch?fmtFR(proch):null;
+  const pm=(c.preavis_mois===0||c.preavis_mois)?+c.preavis_mois:null;
+  let deadline=null; if(proch&&pm!==null)deadline=minusMonths(c.prochaine,pm);
+  o.deadline=deadline; o.deadline_fr=deadline?fmtFR(deadline):null;
+  o.days_to_end=proch?days(proch,TODAY):null;
+  o.days_to_deadline=deadline?days(deadline,TODAY):null;
+  let st; if(deadline===null)st='inconnu';
+  else if(o.days_to_end!==null&&o.days_to_end<0)st='expire';
+  else if(o.days_to_deadline<0)st='preavis_passe';
+  else if(o.days_to_deadline<=60)st='urgent';
+  else if(o.days_to_deadline<=120)st='bientot'; else st='ok';
+  o.statut=st; return o;
+}
+const active=()=>STATE.filter(c=>!c.archived&&!c.pending).map(derive);
+const archivedList=()=>STATE.filter(c=>c.archived).map(derive);
+const pendingList=()=>STATE.filter(c=>c.pending&&!c.archived).map(derive);
+
+/* ---------- format ---------- */
+const eur=n=>(n||0).toLocaleString('fr-FR',{maximumFractionDigits:0})+' €';
+const eur2=n=>(n||0).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const STAT={preavis_passe:{lab:'Préavis passé',cls:'st-critical'},urgent:{lab:'Urgent',cls:'st-serious'},bientot:{lab:'Bientôt',cls:'st-warning'},expire:{lab:'Échéance passée',cls:'st-muted'},ok:{lab:'OK',cls:'st-ok'},inconnu:{lab:'Sans date',cls:'st-muted'}};
+function pill(s){const m=STAT[s]||STAT.inconnu;return `<span class="pill ${m.cls}"><span class="dot"></span>${m.lab}</span>`;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function barChart(el,rows,color){const max=Math.max(...rows.map(r=>r[1]),1);el.innerHTML=rows.map((r,i)=>{const c=typeof color==='function'?color(r,i):color;return `<div class="barrow"><div class="rl">${esc(r[0])}</div><div class="bartrack"><div class="barfill" style="width:${Math.max(2,r[1]/max*100)}%;background:${c}"></div></div><div class="rv">${r[2]}</div></div>`;}).join('');}
+
+let echSort={k:'days_to_deadline',dir:1}, allSort={k:'restaurant',dir:1};
+function cmp(a,b,k,dir){let x=a[k],y=b[k];if(k==='prochaine'){x=a.prochaine||'';y=b.prochaine||'';}if(k==='deadline'){x=a.deadline?a.deadline.getTime():0;y=b.deadline?b.deadline.getTime():0;}if(x===null||x===undefined)x=dir>0?Infinity:-Infinity;if(y===null||y===undefined)y=dir>0?Infinity:-Infinity;if(typeof x==='number'&&typeof y==='number')return (x-y)*dir;return String(x).localeCompare(String(y),'fr')*dir;}
+function fillSelect(sel,opts,allLabel){const cur=sel.value;sel.innerHTML=`<option value="">${allLabel}</option>`+opts.map(o=>`<option>${esc(o)}</option>`).join('');if([...sel.options].some(o=>o.value===cur))sel.value=cur;}
+
+/* ---------- master render ---------- */
+function refresh(){
+  const A=active();
+  const RESTOS=[...new Set(A.map(d=>d.restaurant))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const total=A.reduce((a,d)=>a+(d.total||0),0);
+  const nPasse=A.filter(d=>d.statut==='preavis_passe').length,nUrg=A.filter(d=>d.statut==='urgent').length,nBientot=A.filter(d=>d.statut==='bientot').length;
+  document.getElementById('cntEch').textContent=nPasse+nUrg+nBientot;
+  document.getElementById('cntTous').textContent=A.length;
+  document.getElementById('cntArch').textContent=archivedList().length;
+  document.getElementById('cntHist').textContent=HISTORY.length;
+  document.getElementById('cntValid').textContent=pendingList().length;
+  document.getElementById('kpis').innerHTML=[['Contrats suivis',A.length,''],['Coût annuel HT',eur(total),''],['Restaurants',RESTOS.length,''],['Préavis passés',nPasse,'alert'],['Urgents (≤60 j)',nUrg,'warn'],['À venir (≤120 j)',nBientot,'warn']].map(([l,v,c])=>`<div class="kpi ${c}"><div class="lab">${l}</div><div class="val">${v}</div></div>`).join('');
+  const statOrder=['preavis_passe','urgent','bientot','ok','expire','inconnu'],sc={};A.forEach(d=>sc[d.statut]=(sc[d.statut]||0)+1);
+  const colMap={preavis_passe:'var(--critical)',urgent:'var(--serious)',bientot:'var(--warning)',ok:'var(--good)',expire:'var(--muted)',inconnu:'var(--muted)'};
+  const shown=statOrder.filter(s=>sc[s]);
+  barChart(document.getElementById('statutBars'),shown.map(s=>[STAT[s].lab,sc[s],sc[s]]),(r,i)=>colMap[shown[i]]);
+  const RA={};A.forEach(d=>{const k=d.restaurant;RA[k]=RA[k]||{n:0,cout:0,local:0};RA[k].n++;RA[k].cout+=(d.total||0);if(d.gestion==='Local')RA[k].local+=(d.total||0);});
+  barChart(document.getElementById('apercuCout'),Object.entries(RA).sort((a,b)=>b[1].cout-a[1].cout).map(([k,v])=>[k,v.cout,eur(v.cout)]),'var(--s1)');
+  renderActionTable(document.getElementById('apercuActions'),A.filter(d=>d.days_to_deadline!==null&&d.days_to_deadline<=90&&d.statut!=='expire').sort((a,b)=>a.days_to_deadline-b.days_to_deadline));
+  fillSelect(document.getElementById('fRest'),RESTOS,'Tous les restaurants');
+  fillSelect(document.getElementById('tRest'),RESTOS,'Tous les restaurants');
+  fillSelect(document.getElementById('hRest'),RESTOS,'Tous les restaurants');
+  renderEch(A);renderAll(A);renderCompare(A,RA);renderMatrix(A,RA,RESTOS,total);renderArch();renderHist();renderValider();renderAcces();
+}
+function renderValider(){
+  const P=pendingList();const body=document.getElementById('validBody');
+  if(!P.length){body.innerHTML='<tr><td colspan="8" class="empty" style="text-align:center;padding:22px">Aucun contrat en attente. Demande à Claude « importe les nouveaux contrats » pour synchroniser le Drive partagé.</td></tr>';return;}
+  body.innerHTML=P.map(d=>`<tr>
+    <td>${esc(d.restaurant)}</td>
+    <td>${esc(d.prestataire)}</td>
+    <td>${esc(d.contrat)}</td>
+    <td>${esc(d.gestion||'')}</td>
+    <td class="num">${d.total?eur(d.total):(d.eur_ht?eur(d.eur_ht):'<span class="nolink">à saisir</span>')}</td>
+    <td class="num">${d.preavis_mois!=null?d.preavis_mois+' mois':'—'}</td>
+    <td>${esc(d.duree||'')}</td>
+    <td><div class="actioncell">${linkBtn(d)}<button class="btn sm editBtn" data-id="${d.id}">Modifier</button><button class="btn sm primary validBtn" data-id="${d.id}">Valider</button><button class="btn sm danger delBtn" data-id="${d.id}">Supprimer</button></div></td>
+  </tr>`).join('');
+}
+async function validateC(id){const c=STATE.find(x=>String(x.id)===String(id));if(!c)return;await sb.from('contracts').update({pending:false,updated_at:new Date().toISOString(),updated_by:ME}).eq('id',id);await histInsert([{contract_id:id,restaurant:c.restaurant,prestataire:c.prestataire,contrat:c.contrat,action:'create',changed_by:ME,note:'Import Drive validé'}]);await reloadAll();}
+function renderActionTable(container,rows){
+  if(!rows.length){container.innerHTML='<div class="empty">Aucun contrat sur cet horizon.</div>';return;}
+  container.innerHTML=`<div class="tableScroll"><table><thead><tr><th>Restaurant</th><th>Prestataire</th><th>Contrat</th><th class="num">Coût HT/an</th><th>Échéance</th><th>Limite préavis</th><th class="num">Jours</th><th>Statut</th></tr></thead><tbody>${rows.map(d=>`<tr><td>${esc(d.restaurant)}</td><td>${esc(d.prestataire)}</td><td>${esc(d.contrat)}</td><td class="num">${d.total?eur(d.total):'—'}</td><td class="datachip">${d.prochaine_fr||'—'}</td><td class="datachip">${d.deadline_fr||'—'}</td><td class="num">${d.days_to_deadline!==null?d.days_to_deadline:'—'}</td><td>${pill(d.statut)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+const fRest=document.getElementById('fRest'),fStat=document.getElementById('fStat'),fHoriz=document.getElementById('fHoriz'),fSearch=document.getElementById('fSearch');
+function linkBtn(d){return d.lien?`<a class="btn sm linkBtn" href="${esc(d.lien)}" target="_blank" rel="noopener" title="Ouvrir le contrat (Drive)">📎 Contrat</a>`:'<span class="nolink" title="Aucun document associé">—</span>';}
+function actionBtns(d){return `<div class="actioncell">${linkBtn(d)}<button class="btn sm editBtn" data-id="${d.id}">Modifier</button><button class="btn sm archBtn" data-id="${d.id}">Archiver</button></div>`;}
+function renderEch(A){
+  let rows=A.slice();
+  if(fRest.value)rows=rows.filter(d=>d.restaurant===fRest.value);
+  if(fStat.value)rows=rows.filter(d=>d.statut===fStat.value);
+  if(fHoriz.value!=='all')rows=rows.filter(d=>d.days_to_deadline!==null&&d.days_to_deadline<=+fHoriz.value);
+  const q=fSearch.value.trim().toLowerCase(); if(q)rows=rows.filter(d=>(d.prestataire+' '+d.contrat).toLowerCase().includes(q));
+  rows.sort((a,b)=>cmp(a,b,echSort.k,echSort.dir));
+  document.getElementById('echBody').innerHTML=rows.map(d=>`<tr><td>${esc(d.restaurant)}</td><td>${esc(d.prestataire)}</td><td>${esc(d.contrat)}</td><td class="num">${d.total?eur(d.total):'—'}</td><td class="datachip">${d.prochaine_fr||'—'}</td><td class="datachip">${d.deadline_fr||'—'}</td><td class="num">${d.days_to_deadline!==null?d.days_to_deadline:'—'}</td><td>${pill(d.statut)}</td><td>${actionBtns(d)}</td></tr>`).join('')||'<tr><td colspan="9" class="empty">Aucun contrat.</td></tr>';
+  document.getElementById('echCount').textContent=rows.length+' contrat(s) affiché(s)';
+}
+const tRest=document.getElementById('tRest'),tGest=document.getElementById('tGest'),tSearch=document.getElementById('tSearch');
+function renderAll(A){
+  let rows=A.slice();
+  if(tRest.value)rows=rows.filter(d=>d.restaurant===tRest.value);
+  if(tGest.value)rows=rows.filter(d=>d.gestion===tGest.value);
+  const q=tSearch.value.trim().toLowerCase(); if(q)rows=rows.filter(d=>(d.prestataire+' '+d.contrat+' '+d.restaurant).toLowerCase().includes(q));
+  rows.sort((a,b)=>cmp(a,b,allSort.k,allSort.dir));
+  document.getElementById('allBody').innerHTML=rows.map(d=>`<tr><td>${esc(d.restaurant)}</td><td>${esc(d.prestataire)}</td><td>${esc(d.contrat)}</td><td class="num">${d.eur_ht?eur2(d.eur_ht):'—'}</td><td>${esc(d.rythme)||'—'}</td><td class="num">${d.total?eur(d.total):'—'}</td><td><span class="tag">${esc(d.gestion)||'—'}</span></td><td class="datachip">${d.prochaine_fr||'—'}</td><td>${pill(d.statut)}</td><td>${actionBtns(d)}</td></tr>`).join('')||'<tr><td colspan="10" class="empty">Aucun résultat.</td></tr>';
+  document.getElementById('allCount').textContent=rows.length+' / '+A.length+' contrats actifs';
+}
+const cmpMetric=document.getElementById('cmpMetric');
+function groupSum(A,key){const m={};A.forEach(d=>{m[d[key]]=(m[d[key]]||0)+(d.total||0)});return m;}
+function renderCompare(A,RA){
+  const m=cmpMetric.value;
+  let rows=Object.entries(RA).map(([k,v])=>{let val,lab;if(m==='cout'){val=v.cout;lab=eur(v.cout);}else if(m==='n'){val=v.n;lab=v.n+' contrats';}else if(m==='moy'){val=v.cout/v.n;lab=eur(v.cout/v.n);}else{val=v.cout?v.local/v.cout*100:0;lab=Math.round(val)+'% ('+eur(v.local)+')';}return [k,val,lab];}).sort((a,b)=>b[1]-a[1]);
+  barChart(document.getElementById('cmpBars'),rows,'var(--s1)');
+  barChart(document.getElementById('cmpType'),Object.entries(groupSum(A,'contrat')).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v,eur(v)]),'var(--s5)');
+  barChart(document.getElementById('cmpPresta'),Object.entries(groupSum(A,'prestataire')).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>[k,v,eur(v)]),'var(--s7)');
+}
+function renderMatrix(A,RA,RESTOS,total){
+  const types=[...new Set(A.map(d=>d.contrat))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const cell={};A.forEach(d=>{cell[d.restaurant+'|'+d.contrat]=(cell[d.restaurant+'|'+d.contrat]||0)+(d.total||0);});
+  let h='<thead><tr><th>Type \\ Resto</th>'+RESTOS.map(r=>`<th class="num">${esc(r)}</th>`).join('')+'<th class="num">Total</th></tr></thead><tbody>';
+  types.forEach(t=>{let rt=0;h+=`<tr><td>${esc(t)}</td>`+RESTOS.map(r=>{const v=cell[r+'|'+t];rt+=v||0;return `<td class="num">${v?eur(v):'<span style=\"color:var(--muted)\">·</span>'}</td>`;}).join('')+`<td class="num"><b>${eur(rt)}</b></td></tr>`;});
+  h+=`<tr><td><b>Total</b></td>`+RESTOS.map(r=>`<td class="num"><b>${eur(RA[r].cout)}</b></td>`).join('')+`<td class="num"><b>${eur(total)}</b></td></tr></tbody>`;
+  document.getElementById('matrix').innerHTML=h;
+}
+function renderArch(){
+  const rows=archivedList();
+  document.getElementById('archBody').innerHTML=rows.map(d=>`<tr><td>${esc(d.restaurant)}</td><td>${esc(d.prestataire)}</td><td>${esc(d.contrat)}</td><td class="num">${d.total?eur(d.total):'—'}</td><td class="datachip">${d.prochaine_fr||'—'}</td><td><div class="actioncell"><button class="btn sm restoreBtn" data-id="${d.id}">Restaurer</button><button class="btn sm danger delBtn" data-id="${d.id}">Supprimer</button></div></td></tr>`).join('')||'<tr><td colspan="6" class="empty">Aucun contrat archivé.</td></tr>';
+  document.getElementById('archCount').textContent=rows.length+' archivé(s)';
+}
+const ACTIONLAB={create:'Création',update:'Modification',archive:'Archivage',restore:'Restauration',delete:'Suppression',comment:'Commentaire'};
+function renderHist(){
+  let rows=HISTORY.slice();
+  const r=document.getElementById('hRest').value, a=document.getElementById('hAction').value;
+  if(r)rows=rows.filter(x=>x.restaurant===r);
+  if(a)rows=rows.filter(x=>x.action===a);
+  document.getElementById('histList').innerHTML=rows.map(x=>{
+    const who=NAMES[(x.changed_by||'').toLowerCase()]||x.changed_by||'—';
+    const dt=new Date(x.changed_at);
+    const when=dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    const ctr=`${esc(x.restaurant)} · ${esc(x.prestataire)} · ${esc(x.contrat)}`;
+    let body;
+    if(x.action==='update')body=`<b>${ctr}</b> — <span class="chg">${esc(x.field)} :</span> <span class="old">${esc(x.old_value)||'∅'}</span> → <span class="new">${esc(x.new_value)||'∅'}</span>`;
+    else if(x.action==='comment')body=`<b>${ctr}</b> — <span class="chg">Commentaire</span>`;
+    else body=`<b>${ACTIONLAB[x.action]||x.action}</b> — ${ctr}`;
+    if(x.note)body+=`<div class="hist-note">💬 ${esc(x.note)}</div>`;
+    return `<div class="hist-item"><div class="hist-when"><b>${who}</b>${when}</div><div class="hist-body">${body}</div></div>`;
+  }).join('')||'<div class="empty">Aucune modification enregistrée pour l\'instant.</div>';
+  document.getElementById('histCount').textContent=rows.length+' entrée(s)';
+}
+
+/* ---------- mutations ---------- */
+const FIELDS=[['restaurant','Restaurant'],['prestataire','Prestataire'],['contrat','Type de contrat'],['gestion','Gestion'],['eur_ht','€ HT'],['rythme','Rythme'],['qte','Quantité'],['total','Total/an'],['duree','Durée'],['date_anniv','Date anniversaire'],['prochaine','Prochaine échéance'],['preavis_mois','Préavis (mois)'],['lien','Lien du contrat']];
+function fmtVal(k,v){if(v==null||v==='')return '';if(k==='prochaine')return isoToFR(v);if(k==='eur_ht'||k==='total')return eur2(v);return String(v);}
+async function histInsert(rows){ if(rows.length) await sb.from('contract_history').insert(rows); }
+async function archiveC(id,note){const c=STATE.find(x=>x.id===id);if(!c)return;await sb.from('contracts').update({archived:true,updated_at:new Date().toISOString(),updated_by:ME}).eq('id',id);await histInsert([{contract_id:id,restaurant:c.restaurant,prestataire:c.prestataire,contrat:c.contrat,action:'archive',changed_by:ME,note:note||null}]);await reloadAll();}
+/* archive modal */
+let archId=null;
+const archOverlay=document.getElementById('archOverlay');
+function openArchive(id){const c=STATE.find(x=>String(x.id)===String(id));if(!c)return;archId=id;document.getElementById('archSub').textContent=c.restaurant+' · '+c.prestataire+' · '+c.contrat+' — il sortira du dashboard et des totaux.';document.getElementById('archNote').value='';archOverlay.classList.add('open');}
+document.getElementById('archCancel').onclick=()=>archOverlay.classList.remove('open');
+archOverlay.onclick=e=>{if(e.target===archOverlay)archOverlay.classList.remove('open');};
+document.getElementById('archConfirm').onclick=async()=>{const note=document.getElementById('archNote').value.trim();archOverlay.classList.remove('open');await archiveC(archId,note);};
+async function restoreC(id){const c=STATE.find(x=>x.id===id);if(!c)return;await sb.from('contracts').update({archived:false,updated_at:new Date().toISOString(),updated_by:ME}).eq('id',id);await histInsert([{contract_id:id,restaurant:c.restaurant,prestataire:c.prestataire,contrat:c.contrat,action:'restore',changed_by:ME}]);await reloadAll();}
+async function deleteC(id){const c=STATE.find(x=>x.id===id);if(!c)return;await histInsert([{contract_id:id,restaurant:c.restaurant,prestataire:c.prestataire,contrat:c.contrat,action:'delete',changed_by:ME}]);await sb.from('contracts').delete().eq('id',id);await reloadAll();}
+document.addEventListener('click',e=>{
+  const ed=e.target.closest('.editBtn'); if(ed){openEdit(ed.dataset.id);return;}
+  const ar=e.target.closest('.archBtn'); if(ar){openArchive(ar.dataset.id);return;}
+  const re=e.target.closest('.restoreBtn'); if(re){restoreC(re.dataset.id);return;}
+  const va=e.target.closest('.validBtn'); if(va){validateC(va.dataset.id);return;}
+  const de=e.target.closest('.delBtn'); if(de){if(confirm('Supprimer définitivement ? (l\'historique est conservé)'))deleteC(de.dataset.id);return;}
+});
+
+/* sorting + filters */
+document.querySelectorAll('#echTable th.sortable').forEach(th=>{th.onclick=()=>{const k=th.dataset.k;echSort.dir=(echSort.k===k)?-echSort.dir:1;echSort.k=k;document.querySelectorAll('#echTable .arw').forEach(a=>a.textContent='');th.querySelector('.arw').textContent=echSort.dir>0?'▲':'▼';renderEch(active());};});
+document.querySelectorAll('#allTable th.sortable').forEach(th=>{th.onclick=()=>{const k=th.dataset.k;allSort.dir=(allSort.k===k)?-allSort.dir:1;allSort.k=k;document.querySelectorAll('#allTable .arw').forEach(a=>a.textContent='');th.querySelector('.arw').textContent=allSort.dir>0?'▲':'▼';renderAll(active());};});
+[fRest,fStat,fHoriz].forEach(el=>el.onchange=()=>renderEch(active()));fSearch.oninput=()=>renderEch(active());
+[tRest,tGest].forEach(el=>el.onchange=()=>renderAll(active()));tSearch.oninput=()=>renderAll(active());
+cmpMetric.onchange=()=>{const A=active();const RA={};A.forEach(d=>{const k=d.restaurant;RA[k]=RA[k]||{n:0,cout:0,local:0};RA[k].n++;RA[k].cout+=(d.total||0);if(d.gestion==='Local')RA[k].local+=(d.total||0);});renderCompare(A,RA);};
+document.getElementById('hRest').onchange=renderHist;document.getElementById('hAction').onchange=renderHist;
+document.getElementById('hRefresh').onclick=async()=>{await loadHistory();renderHist();document.getElementById('cntHist').textContent=HISTORY.length;};
+document.getElementById('refreshBtn').onclick=reloadAll;
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ME)reloadAll();});
+
+/* tabs / theme */
+document.querySelectorAll('.tab').forEach(t=>{t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('#app section').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.getElementById(t.dataset.tab).classList.add('active');};});
+/* ---------- ACCÈS (admin) ---------- */
+document.getElementById('auAdd').onclick=async()=>{
+  const email=document.getElementById('auEmail').value.trim().toLowerCase();
+  const name=document.getElementById('auName').value.trim();
+  const pass=document.getElementById('auPass').value;
+  const m=document.getElementById('auMsg');
+  if(!/^[^@]+@[^@]+\.[^@]+$/.test(email)){m.className='login-msg err';m.textContent='E-mail invalide.';return;}
+  if(!name){m.className='login-msg err';m.textContent='Indique un nom.';return;}
+  if(!pass||pass.length<8){m.className='login-msg err';m.textContent='Mot de passe : 8 caractères minimum.';return;}
+  document.getElementById('auAdd').disabled=true;m.className='login-msg';m.textContent='Création…';
+  const res=await callAdmin({action:'create',email,name,password:pass});
+  document.getElementById('auAdd').disabled=false;
+  if(res&&res.error){m.className='login-msg err';m.textContent='Erreur : '+res.error;}
+  else{m.className='login-msg ok';m.textContent='✅ Utilisateur ajouté. Communique-lui son e-mail et son mot de passe.';document.getElementById('auEmail').value='';document.getElementById('auName').value='';document.getElementById('auPass').value='';await loadUsers();renderAcces();}
+};
+document.addEventListener('click',async e=>{
+  const rb=e.target.closest('[data-act="reset"]'); if(rb){const email=rb.dataset.email,uid=rb.dataset.uid;const np=prompt('Nouveau mot de passe pour '+email+' (8 caractères minimum) :');if(np===null)return;if(np.length<8){alert('Mot de passe : 8 caractères minimum.');return;}const res=await callAdmin({action:'reset',email,uid,password:np});alert(res&&res.error?('Erreur : '+res.error):'✅ Mot de passe réinitialisé.');return;}
+  const xb=e.target.closest('[data-act="remove"]'); if(xb){const email=xb.dataset.email,uid=xb.dataset.uid,nm=xb.dataset.name;if(!confirm("Retirer l'accès de "+(nm||email)+" ? Son compte sera supprimé."))return;const res=await callAdmin({action:'delete',email,uid});if(res&&res.error){alert('Erreur : '+res.error);}else{await loadUsers();renderAcces();}return;}
+});
+const tb=document.getElementById('themeBtn');tb.onclick=()=>{const d=document.documentElement.getAttribute('data-theme')==='dark';document.documentElement.setAttribute('data-theme',d?'light':'dark');tb.textContent=d?'🌙':'☀️';};
+
+/* ---------- MODAL add / edit ---------- */
+const overlay=document.getElementById('overlay');let editingId=null;
+const F={rest:'mRest',presta:'mPresta',contrat:'mContrat',gestion:'mGestion',eur:'mEur',rythme:'mRythme',qte:'mQte',total:'mTotal',duree:'mDuree',anniv:'mAnniv',proch:'mProch',preavis:'mPreavis',lien:'mLien',note:'mNote'};
+const el=k=>document.getElementById(F[k]);
+function fillDatalists(){const uniq=k=>[...new Set(STATE.map(c=>c[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));document.getElementById('dlRest').innerHTML=uniq('restaurant').map(v=>`<option>${esc(v)}</option>`).join('');document.getElementById('dlPresta').innerHTML=uniq('prestataire').map(v=>`<option>${esc(v)}</option>`).join('');document.getElementById('dlContrat').innerHTML=uniq('contrat').map(v=>`<option>${esc(v)}</option>`).join('');}
+function annivToInput(s){if(!s)return '';if(s.includes('-'))return s;const p=s.split('/');return p.length===3?p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'):'';}
+function openAdd(){editingId=null;document.getElementById('mTitle').textContent='Ajouter un contrat';fillDatalists();Object.keys(F).forEach(k=>{const e=el(k);if(e.tagName==='SELECT')e.selectedIndex=0;else e.value='';});document.getElementById('mErr').textContent='';overlay.classList.add('open');el('rest').focus();}
+function openEdit(id){const c=STATE.find(x=>String(x.id)===String(id));if(!c)return;editingId=id;document.getElementById('mTitle').textContent='Modifier un contrat';fillDatalists();
+  el('rest').value=c.restaurant||'';el('presta').value=c.prestataire||'';el('contrat').value=c.contrat||'';el('gestion').value=c.gestion||'National';
+  el('eur').value=c.eur_ht??'';el('rythme').value=c.rythme||'Année';el('qte').value=c.qte??'';el('total').value=c.total??'';el('duree').value=c.duree||'';
+  el('anniv').value=annivToInput(c.date_anniv);el('proch').value=c.prochaine||'';el('preavis').value=c.preavis_mois??'';el('lien').value=c.lien||'';el('note').value='';
+  document.getElementById('mErr').textContent='';overlay.classList.add('open');el('eur').focus();}
+function closeModal(){overlay.classList.remove('open');}
+document.getElementById('addBtn').onclick=openAdd;document.getElementById('mCancel').onclick=closeModal;
+overlay.onclick=e=>{if(e.target===overlay)closeModal();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+document.getElementById('mSave').onclick=async()=>{
+  const v=k=>el(k).value.trim();const err=document.getElementById('mErr');
+  if(!v('rest')||!v('presta')||!v('contrat')){err.textContent='Restaurant, prestataire et type sont obligatoires.';return;}
+  if(!v('proch')){err.textContent='La prochaine échéance est obligatoire.';return;}
+  if(v('preavis')===''){err.textContent='Indique le préavis en mois (0 si aucun).';return;}
+  const eurht=v('eur')===''?null:parseFloat(v('eur'));
+  const qte=v('qte')===''?null:parseInt(v('qte'),10);
+  let total=v('total')===''?null:parseFloat(v('total'));
+  if(total===null)total=(eurht||0)*(qte||1);
+  const anniv=v('anniv')?isoToFR(v('anniv')):null;
+  const note=el('note').value.trim();
+  const rec={restaurant:v('rest'),prestataire:v('presta'),contrat:v('contrat'),gestion:el('gestion').value,eur_ht:eurht,rythme:el('rythme').value,qte:qte,total:total,duree:v('duree')||null,date_anniv:anniv,prochaine:v('proch'),preavis_mois:parseInt(v('preavis'),10),lien:v('lien')||null};
+  document.getElementById('mSave').disabled=true;
+  try{
+    if(editingId){
+      const old=STATE.find(x=>String(x.id)===String(editingId));
+      const nowIso=new Date().toISOString();
+      const {error}=await sb.from('contracts').update({...rec,updated_at:nowIso,updated_by:ME}).eq('id',editingId);
+      if(error)throw error;
+      const changes=[];
+      FIELDS.forEach(([k,lab])=>{let ov=old[k],nv=rec[k];
+        const os=(ov==null||ov==='')?'':(k==='eur_ht'||k==='total'||k==='qte'||k==='preavis_mois')?String(+ov):String(ov);
+        const ns=(nv==null||nv==='')?'':(k==='eur_ht'||k==='total'||k==='qte'||k==='preavis_mois')?String(+nv):String(nv);
+        if(os!==ns)changes.push({contract_id:editingId,restaurant:rec.restaurant,prestataire:rec.prestataire,contrat:rec.contrat,action:'update',field:lab,old_value:fmtVal(k,ov),new_value:fmtVal(k,nv),changed_by:ME,note:note||null});
+      });
+      await histInsert(changes);
+      if(note&&!changes.length)await histInsert([{contract_id:editingId,restaurant:rec.restaurant,prestataire:rec.prestataire,contrat:rec.contrat,action:'comment',changed_by:ME,note:note}]);
+    }else{
+      const {data,error}=await sb.from('contracts').insert({...rec,created_by:ME,updated_by:ME}).select().single();
+      if(error)throw error;
+      await histInsert([{contract_id:data.id,restaurant:rec.restaurant,prestataire:rec.prestataire,contrat:rec.contrat,action:'create',changed_by:ME,note:note||null}]);
+    }
+    closeModal();await reloadAll();
+    if(!editingId){document.querySelector('.tab[data-tab="tous"]').click();}
+  }catch(ex){err.textContent='Erreur : '+(ex.message||ex);}
+  document.getElementById('mSave').disabled=false;
+};
+
+
+/* ===================== EXPORT PDF DIRECTEURS ===================== */
+async function exportDirectorsPDF(){
+  const btn=document.getElementById('btnExportPdf');
+  if(typeof PDFLib==='undefined'){alert('La librairie PDF n’a pas pu se charger (vérifie ta connexion).');return;}
+  const oldTxt=btn?btn.textContent:''; if(btn){btn.disabled=true;btn.textContent='Génération…';}
+  try{
+    const {PDFDocument,StandardFonts,rgb}=PDFLib;
+    // ---- couleurs ----
+    const INK=rgb(0.122,0.161,0.216), MUTE=rgb(0.420,0.447,0.502), LINE=rgb(0.820,0.835,0.859),
+          HEADB=rgb(0.541,0.561,0.420), WHITE=rgb(1,1,1), ZEBRA=rgb(0.961,0.965,0.941),
+          BOX=rgb(0.612,0.639,0.686), ADDZ=rgb(0.984,0.984,0.968);
+    // ---- helpers ----
+    const OKHI=new Set([0x20AC,0x201A,0x0192,0x201E,0x2026,0x2020,0x2021,0x02C6,0x2030,0x0160,0x2039,0x0152,0x017D,0x2018,0x2019,0x201C,0x201D,0x2022,0x2013,0x2014,0x02DC,0x2122,0x0161,0x203A,0x0153,0x017E,0x0178]);
+    const clean=s=>{s=String(s==null?"":s).replace(/[\u00A0\u202F\u2009]/g," ");let o="";for(const ch of s){const cp=ch.codePointAt(0);o+=(cp>0xFF&&!OKHI.has(cp))?"?":ch;}return o;};
+    const money=v=>{const n=Math.round(Number(v)||0);let s=String(Math.abs(n)),o='';for(let i=0;i<s.length;i++){if(i>0&&(s.length-i)%3===0)o+=' ';o+=s[i];}return (n<0?'-':'')+o+' €';};
+    const dfr=iso=>{if(!iso)return '';const p=String(iso).slice(0,10).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:String(iso);};
+    const trunc=(s,n)=>{s=clean(s);return s.length<=n?s:s.slice(0,n-1)+'…';};
+    const short=r=>{const M={'Adeo Ronchin':'ADEO','La Valette':'LA VALETTE','Le Pontet':'LE PONTET','Mérignac':'MÉRIGNAC','Mondeville':'MONDEV.','Noyelles':'NOYELLES','Villenave':'VILLENAVE','Héron':'HÉRON','Btwin':'BTWIN'};return clean(M[r]||r.toUpperCase()).slice(0,11);};
+    const today=(()=>{const d=new Date();return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();})();
+
+    const doc=await PDFDocument.create();
+    const F=await doc.embedFont(StandardFonts.Helvetica);
+    const FB=await doc.embedFont(StandardFonts.HelveticaBold);
+    const FI=await doc.embedFont(StandardFonts.HelveticaOblique);
+    const form=doc.getForm();
+    const tw=(fo,s,sz)=>fo.widthOfTextAtSize(clean(s),sz);
+    const L=(pg,s,x,y,sz,fo,col)=>pg.drawText(clean(s),{x,y,size:sz,font:fo,color:col});
+    const C=(pg,s,cx,y,sz,fo,col)=>{s=clean(s);pg.drawText(s,{x:cx-fo.widthOfTextAtSize(s,sz)/2,y,size:sz,font:fo,color:col});};
+    const R=(pg,s,rx,y,sz,fo,col)=>{s=clean(s);pg.drawText(s,{x:rx-fo.widthOfTextAtSize(s,sz),y,size:sz,font:fo,color:col});};
+
+    // ---- data ----
+    const A=active();
+    const RS=(typeof RESTOS!=='undefined'&&RESTOS&&RESTOS.length)?RESTOS.slice():[...new Set(A.map(d=>d.restaurant))].sort((a,b)=>String(a).localeCompare(String(b),'fr'));
+    const byR={}; RS.forEach(r=>byR[r]=[]);
+    A.forEach(d=>{ if(!byR[d.restaurant])byR[d.restaurant]=[]; byR[d.restaurant].push(d); });
+    RS.forEach(r=>byR[r].sort((a,b)=>String(a.contrat).localeCompare(String(b.contrat),'fr')));
+    const types=[...new Set(A.map(d=>d.contrat))].sort((a,b)=>String(a).localeCompare(String(b),'fr'));
+    const cell={}; A.forEach(d=>{const k=d.restaurant+'|'+d.contrat;cell[k]=(cell[k]||0)+(d.total||0);});
+
+    // ============ PAGE 1 : matrice (paysage A4) ============
+    const W=841.89,H=595.28;
+    let p=doc.addPage([W,H]);
+    let mL=28,mR=28,mT=40;
+    L(p,'Matrice restaurant × type de contrat',mL,H-mT,15,FB,INK);
+    L(p,'Coût annuel HT  •  extraction du dashboard Contrats  •  '+today,mL,H-mT-15,9,F,MUTE);
+    const label_w=128, grid_x=mL+label_w, ncol=RS.length+1, col_w=(W-mR-grid_x)/ncol;
+    const top=H-mT-34, row_h=19.5, head_h=34;
+    p.drawRectangle({x:mL,y:top-head_h,width:(W-mR)-mL,height:head_h,color:HEADB});
+    L(p,'TYPE \\ RESTO',mL+6,top-head_h/2-3,8.2,FB,WHITE);
+    RS.forEach((rt,i)=>C(p,short(rt),grid_x+i*col_w+col_w/2,top-head_h/2-3,8.2,FB,WHITE));
+    C(p,'TOTAL',grid_x+RS.length*col_w+col_w/2,top-head_h/2-3,8.2,FB,WHITE);
+    let y=top-head_h; const colTot=RS.map(()=>0); let grand=0;
+    types.forEach((ct,ri)=>{
+      y-=row_h;
+      if(ri%2===0)p.drawRectangle({x:mL,y:y,width:(W-mR)-mL,height:row_h,color:ZEBRA});
+      L(p,trunc(ct,26),mL+6,y+row_h/2-2.6,7.6,F,INK);
+      let lt=0;
+      RS.forEach((rt,i)=>{const v=cell[rt+'|'+ct];const cx=grid_x+i*col_w;
+        if(v){R(p,money(v),cx+col_w-6,y+row_h/2-2.6,7.6,F,INK);colTot[i]+=v;lt+=v;}
+        else C(p,'–',cx+col_w/2,y+row_h/2-2.6,7.6,F,LINE);});
+      R(p,money(lt),grid_x+RS.length*col_w+col_w-6,y+row_h/2-2.6,7.6,FB,INK); grand+=lt;
+    });
+    y-=row_h;
+    p.drawRectangle({x:mL,y:y,width:(W-mR)-mL,height:row_h,color:HEADB});
+    L(p,'TOTAL',mL+6,y+row_h/2-2.6,7.8,FB,WHITE);
+    RS.forEach((rt,i)=>R(p,money(colTot[i]),grid_x+i*col_w+col_w-6,y+row_h/2-2.6,7.8,FB,WHITE));
+    R(p,money(grand),grid_x+RS.length*col_w+col_w-6,y+row_h/2-2.6,7.8,FB,WHITE);
+    for(let i=0;i<=RS.length;i++){const xx=grid_x+i*col_w;p.drawLine({start:{x:xx,y:top-head_h},end:{x:xx,y:y},thickness:0.4,color:LINE});}
+
+    // ============ FICHES par restaurant (portrait A4) ============
+    const PW=595.28,PH=841.89;
+    RS.forEach(rt=>{
+      const rows=byR[rt]||[];
+      const pg=doc.addPage([PW,PH]);
+      const mL=30,mR=30,mT=46;
+      const totR=rows.reduce((s,d)=>s+(d.total||0),0);
+      L(pg,'Fiche de contrôle – '+rt,mL,PH-mT,15,FB,INK);
+      L(pg,rows.length+' contrat(s) – coût annuel HT total : '+money(totR)+'   •   à vérifier par le directeur',mL,PH-mT-14,9,F,MUTE);
+      L(pg,'Pour chaque ligne, cochez la situation et ajoutez un commentaire si le contrat a changé (prix, prestataire, résiliation…).',mL,PH-mT-26,7.6,FI,MUTE);
+      const x_ct=mL,x_pr=150,x_cout=232,x_ech=286,x_act=342,x_res=372,x_mod=402,x_com=420,x_end=PW-mR;
+      const top=PH-mT-40, hh=30;
+      pg.drawRectangle({x:mL,y:top-hh,width:x_end-mL,height:hh,color:HEADB});
+      L(pg,'CONTRAT',x_ct+4,top-hh+11,7.4,FB,WHITE);
+      L(pg,'PRESTATAIRE',x_pr+2,top-hh+11,7.4,FB,WHITE);
+      R(pg,'COÛT HT',x_cout+46,top-hh+11,7.4,FB,WHITE);
+      L(pg,'ÉCHÉANCE',x_ech+2,top-hh+11,7.4,FB,WHITE);
+      C(pg,'Tjs',x_act+6,top-hh+18,6.3,FB,WHITE); C(pg,'en place',x_act+6,top-hh+9,6.3,FB,WHITE);
+      C(pg,'Rési-',x_res+6,top-hh+18,6.3,FB,WHITE); C(pg,'lié',x_res+6,top-hh+9,6.3,FB,WHITE);
+      C(pg,'Modi-',x_mod+6,top-hh+18,6.3,FB,WHITE); C(pg,'fié',x_mod+6,top-hh+9,6.3,FB,WHITE);
+      L(pg,'COMMENTAIRE DIRECTEUR',x_com+4,top-hh+11,7.4,FB,WHITE);
+      const rh=30; let y=top-hh;
+      const safe=clean(rt).replace(/[^A-Za-z0-9]/g,'')||('R'+Math.abs(rt.length));
+      const mkCheck=(nm,x,cy)=>{const cb=form.createCheckBox(nm);cb.addToPage(pg,{x:x,y:cy,width:11,height:11,borderColor:BOX,borderWidth:0.7,backgroundColor:WHITE});};
+      const mkText=(nm,x,yy,w,h,sz)=>{const tf=form.createTextField(nm);try{tf.setFontSize(sz);}catch(e){}tf.setText('');tf.addToPage(pg,{x:x,y:yy,width:w,height:h,borderColor:BOX,borderWidth:0.6,backgroundColor:WHITE});};
+      rows.forEach((d,idx)=>{
+        y-=rh;
+        if(idx%2===0)pg.drawRectangle({x:mL,y:y,width:x_end-mL,height:rh,color:ZEBRA});
+        pg.drawLine({start:{x:mL,y:y},end:{x:x_end,y:y},thickness:0.4,color:LINE});
+        const midy=y+rh/2;
+        L(pg,trunc(d.contrat,22),x_ct+4,midy+1,8,FB,INK);
+        L(pg,'gestion '+(d.gestion||'-'),x_ct+4,midy-8,7.4,F,MUTE);
+        L(pg,trunc(d.prestataire,13),x_pr+2,midy-2,7.8,F,INK);
+        R(pg,money(d.total),x_cout+46,midy-2,7.8,FB,INK);
+        L(pg,dfr(d.prochaine)||'–',x_ech+2,midy-2,7.4,F,MUTE);
+        const cy=midy-5.5;
+        mkCheck(safe+'_'+idx+'_actif',x_act,cy);
+        mkCheck(safe+'_'+idx+'_resil',x_res,cy);
+        mkCheck(safe+'_'+idx+'_modif',x_mod,cy);
+        mkText(safe+'_'+idx+'_com',x_com+2,y+5,x_end-x_com-6,rh-10,7.5);
+      });
+      // lignes vierges : contrat à ajouter
+      const band_h=15; y-=band_h;
+      pg.drawRectangle({x:mL,y:y,width:x_end-mL,height:band_h,color:HEADB});
+      L(pg,'+  CONTRAT(S) À AJOUTER  (existant mais non listé ci-dessus)',x_ct+4,y+4.5,7,FB,WHITE);
+      for(let k=0;k<3;k++){
+        y-=rh;
+        if(k%2===0)pg.drawRectangle({x:mL,y:y,width:x_end-mL,height:rh,color:ADDZ});
+        pg.drawLine({start:{x:mL,y:y},end:{x:x_end,y:y},thickness:0.4,color:LINE});
+        const midy=y+rh/2, cy=midy-5.5;
+        mkText(safe+'_add'+k+'_contrat',x_ct+2,y+6,x_pr-x_ct-6,rh-12,7.5);
+        mkText(safe+'_add'+k+'_prest',x_pr+2,y+6,x_cout-x_pr-6,rh-12,7.5);
+        mkText(safe+'_add'+k+'_cout',x_cout+2,y+6,x_ech-x_cout-6,rh-12,7.5);
+        mkText(safe+'_add'+k+'_ech',x_ech+2,y+6,x_act-3-x_ech-4,rh-12,7.5);
+        mkCheck(safe+'_add'+k+'_actif',x_act,cy);
+        mkCheck(safe+'_add'+k+'_resil',x_res,cy);
+        mkCheck(safe+'_add'+k+'_modif',x_mod,cy);
+        mkText(safe+'_add'+k+'_com',x_com+2,y+5,x_end-x_com-6,rh-10,7.5);
+      }
+      pg.drawLine({start:{x:mL,y:y},end:{x:x_end,y:y},thickness:0.4,color:LINE});
+      [x_pr,x_cout+2,x_ech,x_act-3,x_res-3,x_mod-3,x_com].forEach(xx=>pg.drawLine({start:{x:xx,y:top-hh},end:{x:xx,y:y},thickness:0.4,color:LINE}));
+      // signature
+      const sy=y-34;
+      L(pg,'Contrôle effectué par (directeur) :',mL,sy+14,8.5,FB,INK);
+      mkText(safe+'_sign_nom',mL+165,sy+4,150,16,9);
+      L(pg,'Date :',mL+330,sy+14,8.5,FB,INK);
+      mkText(safe+'_sign_date',mL+362,sy+4,90,16,9);
+      L(pg,'Légende : cochez « Tjs en place » si le contrat existe encore à l’identique, « Résilié » s’il n’existe plus, « Modifié » en cas de changement (détail dans le commentaire).',mL,sy-6,7,FI,MUTE);
+    });
+
+    try{form.updateFieldAppearances(F);}catch(e){}
+    const bytes=await doc.save();
+    const blob=new Blob([bytes],{type:'application/pdf'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='Contrats_Salad_comparaison_directeurs.pdf';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+  }catch(ex){
+    console.error(ex);
+    alert('Erreur lors de la génération du PDF : '+(ex&&ex.message?ex.message:ex));
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent=oldTxt;}
+  }
+}
+try{const _b=document.getElementById('btnExportPdf'); if(_b)_b.addEventListener('click',exportDirectorsPDF);}catch(e){}
+
+</script>
+</body>
+</html>
