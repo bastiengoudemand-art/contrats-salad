@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Synthèse des Budgets 2026 — Salad &amp; Co</title>
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pilotage des Heures — Salad &amp; Co</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
 #frame{border:0;width:100vw;height:100vh;display:none}
@@ -13,25 +13,25 @@ button{width:100%;border:none;cursor:pointer;font-size:14px;font-weight:600;bord
 .m{font-size:13px;margin-top:12px;min-height:16px;color:#c0392b}</style>
 <!-- SALADCO — chrome commun (début) -->
 <link rel="stylesheet" href="assets/css/saladco.css">
-<link rel="manifest" href="assets/manifests/budget.webmanifest">
-<meta name="theme-color" content="#6d4aa7">
+<link rel="manifest" href="assets/manifests/heures.webmanifest">
+<meta name="theme-color" content="#e0821e">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Budget">
-<script defer src="assets/js/saladco-nav.js" data-app="budget"></script>
+<meta name="apple-mobile-web-app-title" content="Heures">
+<script defer src="assets/js/saladco-nav.js" data-app="heures"></script>
 <!-- SALADCO — chrome commun (fin) -->
 </head>
 <body>
-<iframe id="frame" title="Synthèse des Budgets 2026"></iframe>
+<iframe id="frame" title="Pilotage des Heures"></iframe>
 <div id="ov"><div class="card">
 <div class="logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
-<h1>Synthèse des Budgets 2026</h1><p>Salad &amp; Co — connexion requise</p>
+<h1>Pilotage des Heures</h1><p>Salad &amp; Co — connexion requise</p>
 <form id="f"><label>Adresse mail</label><input type="email" id="em" autocomplete="username" placeholder="prenom.nom@saladandco.fr" required>
 <label>Mot de passe</label><input type="password" id="pw" autocomplete="current-password" placeholder="••••••••" required>
 <button type="submit" id="bt">Se connecter</button></form>
 <div class="m" id="msg"></div></div></div>
 <script>
-var SB_URL='https://wplolvjziqqvvcydvfxs.supabase.co', SB_KEY='sb_publishable__ETgYHnd7kBRJ-4QIkrxPw_UzPxo0dp', NAME='budget';
+var SB_URL='https://wplolvjziqqvvcydvfxs.supabase.co', SB_KEY='sb_publishable__ETgYHnd7kBRJ-4QIkrxPw_UzPxo0dp', NAME='heures';
 var sb=supabase.createClient(SB_URL,SB_KEY);
 var ov=document.getElementById('ov'), frame=document.getElementById('frame'), msg=document.getElementById('msg');
 async function load(session){

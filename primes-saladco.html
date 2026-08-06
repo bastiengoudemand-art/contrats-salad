@@ -1,52 +1,1051 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pilotage des Heures — Salad &amp; Co</title>
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Suivi Primes Saladco",
+  "schemaVersion": 1,
+  "description": "Outil de suivi de la performance des magasins (Tour Client, NSF, Analyse, E-learning → COEF OPE) et de calcul des primes trimestrielles par manager. Saisie continue + synthèse de fin de trimestre. Sauvegarde auto + export/import JSON/CSV.",
+  "mcpTools": [],
+  "mcpServerNames": []
+}
+</script>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi Performance & Primes — Salad&Co</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
-#frame{border:0;width:100vw;height:100vh;display:none}
-#ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,Arial,sans-serif;background:radial-gradient(1200px 700px at 15% -10%,#1e4a2c 0,transparent 55%),linear-gradient(160deg,#0f2417,#16351f)}
-.card{background:#fff;border-radius:22px;box-shadow:0 20px 50px rgba(0,0,0,.3);padding:34px 30px;text-align:center;width:370px;max-width:92vw}
-.logo{width:56px;height:56px;border-radius:16px;margin:0 auto 16px;background:linear-gradient(135deg,#3aa85e,#1f6b39);display:flex;align-items:center;justify-content:center}
-h1{font-size:20px;font-weight:700;color:#14281c}p{font-size:13px;color:#5c7263;margin:6px 0 20px}
-label{display:block;text-align:left;font-size:12px;font-weight:600;color:#5c7263;margin-bottom:6px}
-input{width:100%;font-size:15px;font-family:inherit;border:1px solid #e4ebe6;border-radius:11px;padding:12px 13px;margin-bottom:13px}
-input:focus{outline:none;border-color:#2f8f4e}
-button{width:100%;border:none;cursor:pointer;font-size:14px;font-weight:600;border-radius:11px;padding:13px;color:#fff;background:linear-gradient(135deg,#3aa85e,#1f6b39)}
-.m{font-size:13px;margin-top:12px;min-height:16px;color:#c0392b}</style>
+<style>
+  :root{
+    --green:#2e7d32; --green-d:#1b5e20; --green-l:#e8f5e9; --green-ll:#f4faf5;
+    --ink:#1f2d24; --muted:#6b7d72; --line:#d8e3db; --bg:#f6f9f7;
+    --amber:#f5a623; --red:#d64545; --ok:#2e9e5b;
+    --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.45}
+  header{background:linear-gradient(120deg,var(--green-d),var(--green));color:#fff;padding:18px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:19px;margin:0;font-weight:650;letter-spacing:.2px}
+  header .logo{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:20px}
+  header .sub{font-size:12px;opacity:.85;margin-top:2px}
+  header .spacer{flex:1}
+  .savebadge{font-size:11.5px;background:rgba(255,255,255,.18);padding:5px 10px;border-radius:20px}
+  nav{display:flex;gap:2px;background:#fff;padding:0 16px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;overflow-x:auto}
+  nav button{border:0;background:none;padding:14px 16px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap}
+  nav button:hover{color:var(--green-d)}
+  nav button.active{color:var(--green-d);border-bottom-color:var(--green)}
+  main{max-width:1200px;margin:0 auto;padding:22px 20px 80px}
+  .panel{display:none;animation:fade .2s}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  h2{font-size:17px;margin:0 0 4px;color:var(--green-d)}
+  .lead{color:var(--muted);margin:0 0 18px;font-size:13px;max-width:760px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px}
+  .card h3{margin:0 0 12px;font-size:14.5px;color:var(--ink)}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+  label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600}
+  input,select{font-family:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  input:focus,select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-l)}
+  input[type=number]{width:90px}
+  .btn{border:0;border-radius:8px;padding:9px 15px;font-size:13px;font-weight:650;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .btn.primary{background:var(--green);color:#fff}
+  .btn.primary:hover{background:var(--green-d)}
+  .btn.ghost{background:var(--green-l);color:var(--green-d)}
+  .btn.ghost:hover{background:#d7eeda}
+  .btn.line{background:#fff;border:1px solid var(--line);color:var(--ink)}
+  .btn.line:hover{border-color:var(--green)}
+  .btn.danger{background:#fbeaea;color:var(--red)}
+  .btn.sm{padding:5px 9px;font-size:12px}
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:center}
+  th{background:var(--green-ll);color:var(--green-d);font-weight:650;position:sticky}
+  td.name,th.name{text-align:left;font-weight:600;white-space:nowrap}
+  tbody tr:nth-child(even){background:#fbfdfb}
+  .tblwrap{overflow-x:auto;border-radius:10px;border:1px solid var(--line)}
+  table.grid input{width:62px;padding:5px;text-align:center;border-radius:6px}
+  .coef{font-weight:700}
+  .coef.c1{color:var(--ok)} .coef.c075{color:var(--amber)} .coef.c0{color:var(--red)}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+  .pill.ok{background:#e4f5ec;color:var(--ok)} .pill.ko{background:#fbeaea;color:var(--red)}
+  .qsel{display:inline-flex;background:var(--green-l);border-radius:10px;padding:3px;gap:2px}
+  .qsel button{border:0;background:none;padding:7px 16px;border-radius:8px;font-weight:700;color:var(--green-d);cursor:pointer;font-size:13px}
+  .qsel button.active{background:#fff;box-shadow:var(--shadow)}
+  .muted{color:var(--muted)}
+  .hint{font-size:12px;color:var(--muted);background:var(--green-ll);border-left:3px solid var(--green);padding:9px 12px;border-radius:0 8px 8px 0;margin:0 0 16px}
+  .totrow td{background:var(--green-l);font-weight:800;color:var(--green-d)}
+  .kpi{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .kpi .k{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .kpi .k .v{font-size:22px;font-weight:800;color:var(--green-d)}
+  .kpi .k .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(30px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.25s;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;background:#eef4f0;color:var(--muted)}
+  .tag.std{background:#e7f0fb;color:#2b6cb0}
+  .tag.solo{background:#f6ecfb;color:#8a4bbf}
+  .del{color:var(--red);cursor:pointer;font-weight:700;border:0;background:none;font-size:15px}
+  details.tbl{margin-top:8px}
+  summary{cursor:pointer;font-weight:600;color:var(--green-d);font-size:13px;padding:6px 0}
+  .fiche-store-sel{display:flex;flex-wrap:wrap;gap:8px}
+  .fiche-store-sel .chk{display:inline-flex;align-items:center;gap:6px;background:var(--green-ll);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;user-select:none}
+  .fiche-store-sel .chk:hover{border-color:var(--green)}
+  .fiche-store-sel .chk input{margin:0;accent-color:var(--green)}
+  /* Auth overlay */
+  .overlay{position:fixed;inset:0;background:linear-gradient(120deg,var(--green-d),var(--green));display:grid;place-items:center;z-index:200;padding:20px}
+  .login{background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:30px 28px;max-width:390px;width:100%;text-align:center}
+  .login .logo{width:56px;height:56px;border-radius:14px;background:var(--green-l);display:grid;place-items:center;font-size:30px;margin:0 auto 14px}
+  .login h2{margin:0 0 6px;color:var(--green-d);font-size:18px}
+  .login p{color:var(--muted);font-size:13px;margin:0 0 18px;line-height:1.5}
+  .login input{width:100%;margin-bottom:10px;text-align:center;font-size:14px;padding:10px}
+  .login .btn{width:100%;justify-content:center}
+  .login .msg{font-size:12.5px;margin-top:12px;min-height:16px;line-height:1.5}
+  .login .msg.ok{color:var(--ok)} .login .msg.err{color:var(--red)}
+  .login .alt{font-size:12px;color:var(--muted);margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+  .login .alt .row2{display:flex;gap:6px;margin-top:8px}
+  .login .alt input{margin:0;text-align:center}
+  .hidden{display:none!important}
+  .userbox{display:flex;align-items:center;gap:8px;font-size:12px}
+  .userbox .who{background:rgba(255,255,255,.18);padding:5px 10px;border-radius:20px}
+  .userbox .logout{background:rgba(255,255,255,.12);border:0;color:#fff;padding:5px 10px;border-radius:20px;cursor:pointer;font-size:12px}
+  .userbox .logout:hover{background:rgba(255,255,255,.25)}
+  @keyframes remoteflash{0%{background:var(--amber);color:#3a2a00}100%{background:rgba(255,255,255,.18);color:#fff}}
+  .savebadge.flash{animation:remoteflash 1.3s}
+  @media print{
+    .overlay{display:none!important}
+    header,nav,.toolbar,.noprint{display:none!important}
+    .panel{display:none!important}
+    .panel.active{display:block!important}
+    main{max-width:none;padding:0}
+    .card{box-shadow:none;break-inside:avoid}
+    body{background:#fff;font-size:11px}
+  }
+</style>
 <!-- SALADCO — chrome commun (début) -->
 <link rel="stylesheet" href="assets/css/saladco.css">
-<link rel="manifest" href="assets/manifests/heures.webmanifest">
-<meta name="theme-color" content="#e0821e">
+<link rel="manifest" href="assets/manifests/primes.webmanifest">
+<meta name="theme-color" content="#2e7d32">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Heures">
-<script defer src="assets/js/saladco-nav.js" data-app="heures"></script>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Primes">
+<script defer src="assets/js/saladco-nav.js" data-app="primes"></script>
 <!-- SALADCO — chrome commun (fin) -->
 </head>
 <body>
-<iframe id="frame" title="Pilotage des Heures"></iframe>
-<div id="ov"><div class="card">
-<div class="logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
-<h1>Pilotage des Heures</h1><p>Salad &amp; Co — connexion requise</p>
-<form id="f"><label>Adresse mail</label><input type="email" id="em" autocomplete="username" placeholder="prenom.nom@saladandco.fr" required>
-<label>Mot de passe</label><input type="password" id="pw" autocomplete="current-password" placeholder="••••••••" required>
-<button type="submit" id="bt">Se connecter</button></form>
-<div class="m" id="msg"></div></div></div>
+<header>
+  <div class="logo">🥗</div>
+  <div>
+    <h1>Suivi Performance &amp; Primes</h1>
+    <div class="sub">Tour Client · NSF · Analyse · E-learning → COEF OPE → Primes trimestrielles</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="userbox">
+    <span class="savebadge" id="saveBadge">Connexion…</span>
+    <span class="who hidden" id="userBadge"></span>
+    <button class="logout hidden" id="pwBtn" onclick="changeMyPw()" title="Changer mon mot de passe">🔑 Mot de passe</button>
+    <button class="logout hidden" id="logoutBtn" onclick="doLogout()">Déconnexion</button>
+  </div>
+</header>
+
+<nav id="nav">
+  <button data-tab="notes" class="active">📋 Feuille 1 — Notes</button>
+  <button data-tab="primes">💶 Managers &amp; Primes</button>
+  <button data-tab="synthese">📊 Synthèse trimestre</button>
+  <button data-tab="fiche">📄 Fiche restaurant</button>
+  <button data-tab="params">⚙️ Paramètres</button>
+  <button data-tab="data">💾 Données</button>
+</nav>
+
+<main>
+  <!-- ONGLET NOTES -->
+  <section class="panel active" id="panel-notes">
+    <h2>Feuille 1 — Saisie des notes</h2>
+    <p class="lead">Saisissez au fil de l'eau les notes par magasin. Les moyennes et les coefficients (COEF OPE) se calculent automatiquement selon les tables de conversion définies dans l'onglet Paramètres.</p>
+    <div class="row" style="margin-bottom:14px">
+      <div>Trimestre&nbsp;: <span class="qsel" id="qselNotes"></span></div>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn ghost sm" onclick="addStore()">＋ Ajouter un magasin</button>
+    </div>
+    <div class="hint">Tour Client &amp; E-learning : 3 relevés par trimestre (moyenne automatique). NSF &amp; Analyse : une note (%). Le COEF OPE est la moyenne des 4 coefficients obtenus.</div>
+    <div class="tblwrap">
+      <table class="grid" id="notesTable"></table>
+    </div>
+  </section>
+
+  <!-- ONGLET PRIMES -->
+  <section class="panel" id="panel-primes">
+    <h2>Managers &amp; Primes</h2>
+    <p class="lead">Gérez le roster (Directeurs / Adjoints) puis saisissez, pour le trimestre choisi, l'objectif et le réel de marge et le NPS. Le COEF OPE est repris automatiquement des notes du magasin, avec possibilité d'ajustement.</p>
+
+    <div class="card">
+      <h3>Roster des managers</h3>
+      <div class="tblwrap"><table id="rosterTable"></table></div>
+      <div style="margin-top:12px" class="row">
+        <label class="fld">Magasin
+          <input id="nmStore" list="storeList" placeholder="Ex. Heron">
+          <datalist id="storeList"></datalist>
+        </label>
+        <label class="fld">Rôle
+          <select id="nmRole"><option>Directeur</option><option>Adjoint</option></select>
+        </label>
+        <label class="fld">Matricule<input id="nmMat" style="width:110px" placeholder="000000"></label>
+        <label class="fld">Enjeu (€)<input id="nmEnjeu" type="number" value="1500"></label>
+        <label class="fld">Type prime
+          <select id="nmType">
+            <option value="standard">Standard (Marge/COEF/NPS)</option>
+            <option value="solo">Solo (Marge/COEF)</option>
+          </select>
+        </label>
+        <button class="btn primary sm" onclick="addManager()">Ajouter</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:6px">
+        <h3 style="margin:0">Saisie primes —</h3>
+        <span class="qsel" id="qselPrimes"></span>
+      </div>
+      <div class="hint" id="primeHint"></div>
+      <div class="tblwrap"><table id="primeTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ONGLET SYNTHESE -->
+  <section class="panel" id="panel-synthese">
+    <div class="toolbar noprint">
+      <h2 style="margin:0">Synthèse —</h2>
+      <span class="qsel" id="qselSyn"></span>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn line sm" onclick="window.print()">🖨️ Imprimer / PDF</button>
+      <button class="btn ghost sm" onclick="exportSynthCSV()">⬇️ Export CSV</button>
+    </div>
+    <div id="synthContent"></div>
+  </section>
+
+  <!-- ONGLET FICHE RESTAURANT -->
+  <section class="panel" id="panel-fiche">
+    <div class="toolbar noprint">
+      <h2 style="margin:0">Fiche restaurant —</h2>
+      <span class="qsel" id="qselFiche"></span>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn line sm" onclick="window.print()">🖨️ Imprimer / PDF</button>
+    </div>
+    <div class="card noprint">
+      <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="margin:0">Restaurant(s) à inclure dans le PDF</h3>
+        <div style="display:flex;gap:6px">
+          <button class="btn line sm" onclick="ficheSelectAll(true)">Tout cocher</button>
+          <button class="btn line sm" onclick="ficheSelectAll(false)">Tout décocher</button>
+        </div>
+      </div>
+      <div id="ficheStoreSel" class="fiche-store-sel"></div>
+      <p class="muted" style="font-size:11.5px;margin:10px 0 0">Seuls les restaurants cochés apparaissent dans l'aperçu ci-dessous et à l'impression (une fiche par page). Cliquez ensuite « Imprimer / PDF » puis « Enregistrer au format PDF » pour joindre la fiche à votre mail.</p>
+    </div>
+    <div id="ficheContent"></div>
+  </section>
+
+  <!-- ONGLET PARAMS -->
+  <section class="panel" id="panel-params">
+    <h2>Paramètres de calcul</h2>
+    <p class="lead">Ajustez les seuils, les tables de conversion et les pondérations. Tout recalcul est instantané.</p>
+
+    <div class="card">
+      <h3>Objectif Tour Client</h3>
+      <div class="row">
+        <label class="fld">Seuil de validation (coef = 1 si moyenne ≥ seuil)
+          <input id="pTourObj" type="number" onchange="setParam('tourObj',this.value)">
+        </label>
+      </div>
+    </div>
+
+    <div class="row" style="align-items:flex-start">
+      <div class="card" style="flex:1;min-width:280px">
+        <h3>Table de conversion — Note NSF</h3>
+        <table id="tblNSF"></table>
+        <p class="muted" style="font-size:11.5px;margin:8px 0 0">Note (0–100) → coefficient</p>
+      </div>
+      <div class="card" style="flex:1;min-width:280px">
+        <h3>Table de conversion — Analyse &amp; E-learning</h3>
+        <table id="tblAnalyse"></table>
+        <p class="muted" style="font-size:11.5px;margin:8px 0 0">Note (0–100) → coefficient</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Pondérations des primes</h3>
+      <div class="tblwrap"><table id="weightTable"></table></div>
+      <p class="muted" style="font-size:11.5px;margin:10px 0 0">Montant = Enjeu × pondération × (validation marge 0/1 · coefficient COEF OPE · coefficient NPS 0–1). Ajustez selon le trimestre si les règles évoluent.</p>
+    </div>
+  </section>
+
+  <!-- ONGLET DATA -->
+  <section class="panel" id="panel-data">
+    <h2>Données &amp; sauvegarde</h2>
+    <p class="lead">Les données sont enregistrées automatiquement dans la base partagée Salad&amp;Co : toutes les personnes autorisées voient les mêmes données, en temps réel. L'export JSON permet d'en garder une sauvegarde de côté.</p>
+    <div class="card">
+      <h3>Sauvegarde / restauration</h3>
+      <div class="toolbar" style="margin-bottom:0">
+        <button class="btn primary" onclick="exportJSON()">⬇️ Exporter (JSON)</button>
+        <button class="btn line" onclick="document.getElementById('importFile').click()">⬆️ Importer (JSON)</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importJSON(event)">
+        <button class="btn line" onclick="exportNotesCSV()">📄 Export notes (CSV)</button>
+        <button class="btn danger" onclick="resetAll()">🗑️ Réinitialiser</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>À propos du calcul</h3>
+      <p class="muted" style="font-size:12.5px">
+        <b>COEF OPE</b> = moyenne des 4 coefficients (Tour Client, NSF, Analyse, E-learning) du magasin pour le trimestre.<br>
+        <b>Tour Client / E-learning</b> : moyenne des 3 relevés, puis conversion en coefficient.<br>
+        <b>Prime d'un manager</b> = Marge (Enjeu × pond. si réel ≥ objectif) + COEF OPE (Enjeu × pond. × coef magasin) + NPS (Enjeu × pond. × coef NPS).
+      </p>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="loginOverlay">
+  <div class="login">
+    <div class="logo">🥗</div>
+    <h2 id="loginTitle">Suivi Primes — Salad&amp;Co</h2>
+    <p id="loginSub">Accès réservé. Connectez-vous avec votre email et votre mot de passe Salad&amp;Co.</p>
+    <div id="loginForm">
+      <input type="email" id="loginEmail" placeholder="prenom.nom@saladandco.fr" autocomplete="email">
+      <input type="password" id="loginPass" placeholder="Mot de passe" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="btn primary" id="loginBtn" onclick="doLogin()">Se connecter</button>
+      <div class="msg" id="loginMsg"></div>
+      <div class="alt"><a href="#" onclick="forgotPw();return false;" style="color:var(--muted);text-decoration:underline">Mot de passe oublié ?</a></div>
+    </div>
+    <div id="setpassForm" class="hidden">
+      <input type="password" id="newPass" placeholder="Nouveau mot de passe (min. 6)" autocomplete="new-password" onkeydown="if(event.key==='Enter')applyNewPw()">
+      <button class="btn primary" onclick="applyNewPw()">Enregistrer le mot de passe</button>
+      <div class="msg" id="setpassMsg"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-var SB_URL='https://wplolvjziqqvvcydvfxs.supabase.co', SB_KEY='sb_publishable__ETgYHnd7kBRJ-4QIkrxPw_UzPxo0dp', NAME='heures';
-var sb=supabase.createClient(SB_URL,SB_KEY);
-var ov=document.getElementById('ov'), frame=document.getElementById('frame'), msg=document.getElementById('msg');
-async function load(session){
-  if(!session) return;
-  var r=await sb.from('tools').select('html').eq('name',NAME).maybeSingle();
-  if(r.error){ msg.textContent='Erreur : '+r.error.message; return; }
-  if(!r.data){ msg.textContent='Contenu indisponible (accès refusé).'; await sb.auth.signOut(); return; }
-  frame.srcdoc=r.data.html; frame.style.display='block'; ov.style.display='none';
+/* ============ ÉTAT & PERSISTANCE ============ */
+const QUARTERS = ['T1','T2','T3','T4'];
+/* ---- Supabase : données partagées entre utilisateurs ---- */
+const SUPABASE_URL='https://wplolvjziqqvvcydvfxs.supabase.co';
+const SUPABASE_KEY='sb_publishable__ETgYHnd7kBRJ-4QIkrxPw_UzPxo0dp';
+const ROW_ID='main';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+let CURRENT_EMAIL=null;
+
+function defaultData(){
+  return {
+    params:{
+      tourObj:80,
+      nsfTable:[{min:0,max:79,coef:0},{min:80,max:85,coef:0.75},{min:86,max:100,coef:1}],
+      analyseTable:[{min:0,max:59,coef:0},{min:60,max:79,coef:0.75},{min:80,max:100,coef:1}],
+      weights:{
+        standard:{marge:0.40,coefope:0.40,nps:0.20},
+        solo:{marge:0.50,coefope:0.50,nps:0}
+      }
+    },
+    stores:['Heron','Noyelles','Mondeville','Mérignac','Villenave','Le Pontet','La Valette','Campus','Btwin','Lille centre','Kiabi'],
+    notes:{},        // notes[store][Q] = {tour:[a,b,c], nsf:n, analyse:n, elearning:[a,b,c]}
+    managers:[],     // {id, store, role, mat, enjeu, type}
+    primes:{}        // primes[Q][managerId] = {margeObj, margeReel, nps, coefOverride}
+  };
 }
-document.getElementById('f').addEventListener('submit', async function(e){
-  e.preventDefault(); var b=document.getElementById('bt'); b.disabled=true; msg.style.color='#5c7263'; msg.textContent='Connexion…';
-  var r=await sb.auth.signInWithPassword({email:document.getElementById('em').value.trim(),password:document.getElementById('pw').value});
-  b.disabled=false;
-  if(r.error){ msg.style.color='#c0392b'; msg.textContent='Échec : '+r.error.message; } else { msg.style.color='#1f6b39'; msg.textContent='Connecté ✓'; }
+
+/* seed notes helper */
+function seedNotes(){
+  const N = {};
+  const set=(s,q,o)=>{ (N[s]=N[s]||{})[q]=o; };
+  // T1 / T2 depuis le Google Sheet
+  set('Heron','T1',{tour:[59,64,83],nsf:84,analyse:90.91,elearning:[54,63,82]});
+  set('Heron','T2',{tour:[83,88,94],nsf:90,analyse:91.6,elearning:[70,78,73]});
+  set('Noyelles','T1',{tour:[80,76,70],nsf:84,analyse:100,elearning:[68,58,68]});
+  set('Noyelles','T2',{tour:[65,59,48],nsf:70,analyse:66.67,elearning:[45,71,65]});
+  set('Mondeville','T1',{tour:[79,83,82],nsf:89,analyse:100,elearning:[83,80,73]});
+  set('Mondeville','T2',{tour:[80,77,68],nsf:93,analyse:91.67,elearning:[73,81,86]});
+  set('Mérignac','T1',{tour:[79,91,88],nsf:90,analyse:70,elearning:[24,26,25]});
+  set('Mérignac','T2',{tour:[88,85,88],nsf:78,analyse:91.67,elearning:[23,21,21]});
+  set('Mérignac','T3',{tour:[],nsf:87,analyse:88.89,elearning:[]});
+  set('Villenave','T1',{tour:[75,85,87],nsf:81,analyse:72.73,elearning:[64,69,63]});
+  set('Villenave','T2',{tour:[93,82,80],nsf:74,analyse:100,elearning:[43,44,40]});
+  set('Villenave','T3',{tour:[],nsf:null,analyse:80,elearning:[]});
+  set('Le Pontet','T1',{tour:[93,96,98],nsf:94,analyse:72.73,elearning:[63,66,67]});
+  set('Le Pontet','T2',{tour:[86,95,83],nsf:83,analyse:100,elearning:[54,48,53]});
+  set('La Valette','T1',{tour:[70,68,90],nsf:82,analyse:100,elearning:[64,59,69]});
+  set('La Valette','T2',{tour:[81,82,78],nsf:84,analyse:92.31,elearning:[58,81,87]});
+  set('Campus','T1',{tour:[85,83,96],nsf:82,analyse:90.91,elearning:[67,67,83]});
+  set('Campus','T2',{tour:[80,65,84],nsf:85,analyse:90.91,elearning:[80,71,79]});
+  set('Campus','T3',{tour:[],nsf:83,analyse:null,elearning:[]});
+  set('Btwin','T1',{tour:[92,79,46],nsf:89,analyse:100,elearning:[71,56,38]});
+  set('Btwin','T2',{tour:[53,46,34],nsf:86,analyse:100,elearning:[28,33,11]});
+  set('Lille centre','T1',{tour:[74,95,84],nsf:83,analyse:88.89,elearning:[100,100,100]});
+  set('Lille centre','T2',{tour:[92,57,88],nsf:87,analyse:54.55,elearning:[89,89,75]});
+  set('Lille centre','T3',{tour:[],nsf:79,analyse:null,elearning:[]});
+  set('Kiabi','T2',{tour:[19,26,42],nsf:72,analyse:null,elearning:[17,42,29]});
+  return N;
+}
+
+function seedManagers(){
+  let i=0; const m=(store,role,mat,enjeu,type)=>({id:'m'+(++i),store,role,mat,enjeu,type});
+  return [
+    m('Heron','Directeur','320031',1500,'standard'),
+    m('Heron','Adjoint','212865',375,'standard'),
+    m('Heron','Adjoint','233846',375,'standard'),
+    m('Noyelles','Directeur','197494',1500,'standard'),
+    m('Noyelles','Adjoint','197496',375,'standard'),
+    m('Noyelles','Adjoint','222241',375,'standard'),
+    m('Mondeville','Directeur','164504',1500,'standard'),
+    m('Mondeville','Adjoint','225478',375,'standard'),
+    m('Mérignac','Directeur','211817',1500,'standard'),
+    m('Mérignac','Adjoint','220775',375,'standard'),
+    m('Villenave','Directeur','246195',1500,'standard'),
+    m('Villenave','Adjoint','370016',375,'standard'),
+    m('Le Pontet','Directeur','197949',1500,'standard'),
+    m('Le Pontet','Adjoint','390037',375,'standard'),
+    m('La Valette','Directeur','360018',1500,'standard'),
+    m('La Valette','Adjoint','360035',375,'standard'),
+    m('La Valette','Adjoint','220464',375,'standard'),
+    m('Btwin','Directeur','216194',1500,'solo'),
+    m('Campus','Directeur','116188',1500,'solo'),
+    m('Lille centre','Directeur','235645',1500,'solo'),
+    m('Kiabi','Directeur','230117',1500,'solo')
+  ];
+}
+
+function seedPrimes(managers){
+  // Exemple : marge & NPS du T2 (source Google Sheet). NPS: Directeur & Adjoints partagent la valeur du magasin.
+  const byStore={
+    'Heron':{o:35.00,r:31.9,nps:0}, 'Noyelles':{o:29.50,r:28.1,nps:1},
+    'Mondeville':{o:23.20,r:21.8,nps:1}, 'Mérignac':{o:23.20,r:19.7,nps:1},
+    'Villenave':{o:14.10,r:11.5,nps:0}, 'Le Pontet':{o:20.80,r:15.7,nps:0},
+    'La Valette':{o:33.90,r:23.3,nps:0.5}, 'Btwin':{o:24.0,r:11.8,nps:0},
+    'Campus':{o:16.90,r:8.1,nps:0}, 'Lille centre':{o:32.10,r:32.4,nps:0},
+    'Kiabi':{o:24.60,r:27.8,nps:0}
+  };
+  const P={T1:{},T2:{},T3:{},T4:{}};
+  managers.forEach(mg=>{
+    const b=byStore[mg.store];
+    if(b) P.T2[mg.id]={margeObj:b.o,margeReel:b.r,nps:b.nps,coefOverride:null};
+  });
+  return P;
+}
+
+function freshSeed(){ const d=defaultData(); d.notes=seedNotes(); d.managers=seedManagers(); d.primes=seedPrimes(d.managers); return d; }
+let DATA = freshSeed(); // placeholder jusqu'au chargement distant
+
+/* ---- Synchronisation partagée (Supabase) ---- */
+let saveTimer=null, lastLocalEdit=0, applyingRemote=false, pendingRemote=null;
+function setSync(txt, err){ const b=document.getElementById('saveBadge'); if(!b)return; b.textContent=txt; b.style.color=err?'#ffd7d7':''; }
+function save(){
+  if(applyingRemote) return;              // ne pas ré-émettre pendant l'application d'un changement distant
+  lastLocalEdit=Date.now();
+  setSync('Enregistrement…');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(pushData, 500);    // regroupe les frappes rapprochées
+}
+async function pushData(){
+  try{
+    const { error } = await sb.from('primes_state').upsert({id:ROW_ID, data:DATA, updated_at:new Date().toISOString(), updated_by:CURRENT_EMAIL});
+    if(error) throw error;
+    setSync('Synchronisé ✓');
+  }catch(e){ setSync('Erreur de synchro', true); console.error('save',e); }
+}
+async function loadRemote(){
+  const { data, error } = await sb.from('primes_state').select('data,updated_by').eq('id',ROW_ID).maybeSingle();
+  if(error) throw error;
+  if(data && data.data){ DATA = data.data; }
+  else { DATA = freshSeed(); await pushData(); }   // première utilisation : on installe l'exemple initial
+  refreshAll();
+  setSync('Synchronisé ✓');
+}
+function subscribeRealtime(){
+  sb.channel('primes_state_rt')
+    .on('postgres_changes',{event:'*',schema:'public',table:'primes_state',filter:'id=eq.'+ROW_ID},payload=>{
+      const row=payload.new; if(!row||!row.data) return;
+      if(row.updated_by===CURRENT_EMAIL && (Date.now()-lastLocalEdit)<2000) return;  // notre propre écriture
+      const ae=document.activeElement;
+      if(ae && (ae.tagName==='INPUT'||ae.tagName==='SELECT')){ pendingRemote=row; setSync('Modif. reçue (en attente de fin de saisie)…'); return; }
+      applyRemote(row);
+    }).subscribe();
+  document.addEventListener('focusout',()=>{ if(pendingRemote){ const r=pendingRemote; pendingRemote=null; setTimeout(()=>applyRemote(r),200); } });
+}
+function applyRemote(row){
+  applyingRemote=true;
+  DATA=row.data; refreshAll();
+  applyingRemote=false;
+  const b=document.getElementById('saveBadge');
+  if(b){ b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); }
+  setSync('Mis à jour ✓');
+  toast('Données mises à jour par '+(row.updated_by||'un collègue'));
+}
+
+/* ---- Authentification (email autorisé uniquement) ---- */
+async function initAuth(){
+  try{
+    const isRecovery = (location.hash||'').includes('type=recovery');
+    const { data:{ session } } = await sb.auth.getSession();
+    if(isRecovery){ showLogin(); showSetNewPw(); }
+    else if(session){ await onSignedIn(session); }
+    else { showLogin(); }
+    sb.auth.onAuthStateChange(async (event, s)=>{
+      if(event==='PASSWORD_RECOVERY'){ showLogin(); showSetNewPw(); return; }
+      if(s){ await onSignedIn(s); } else { showLogin(); }
+    });
+  }catch(e){ console.error('auth',e); showLogin('Erreur de connexion. Réessayez.'); }
+}
+async function onSignedIn(session){
+  const email=session.user.email;
+  if(CURRENT_EMAIL===email && document.getElementById('loginOverlay').classList.contains('hidden')) return; // déjà en place
+  CURRENT_EMAIL=email;
+  const ub=document.getElementById('userBadge'); ub.textContent=email; ub.classList.remove('hidden');
+  document.getElementById('logoutBtn').classList.remove('hidden');
+  document.getElementById('pwBtn').classList.remove('hidden');
+  try{
+    await loadRemote();
+    try{ if(sb.realtime && sb.realtime.setAuth) sb.realtime.setAuth(session.access_token); }catch(e){}
+    subscribeRealtime();
+    document.getElementById('loginOverlay').classList.add('hidden');
+  }catch(e){
+    console.error('load',e);
+    await sb.auth.signOut();
+    CURRENT_EMAIL=null;
+    showLogin("Cet email n'est pas autorisé à accéder aux données. Demandez à l'administrateur de vous ajouter.");
+  }
+}
+function showLogin(msg){
+  const o=document.getElementById('loginOverlay'); if(o) o.classList.remove('hidden');
+  const ub=document.getElementById('userBadge'); if(ub) ub.classList.add('hidden');
+  const lo=document.getElementById('logoutBtn'); if(lo) lo.classList.add('hidden');
+  const pb=document.getElementById('pwBtn'); if(pb) pb.classList.add('hidden');
+  setSync('Non connecté');
+  if(msg){ const m=document.getElementById('loginMsg'); if(m){ m.textContent=msg; m.className='msg err'; } }
+}
+async function doLogin(){
+  const email=(document.getElementById('loginEmail').value||'').trim();
+  const password=document.getElementById('loginPass').value||'';
+  const m=document.getElementById('loginMsg');
+  if(!email||!password){ m.textContent='Email et mot de passe requis.'; m.className='msg err'; return; }
+  m.textContent='Connexion…'; m.className='msg';
+  try{
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if(error) throw error;
+    m.textContent='';
+  }catch(e){ m.textContent='Identifiants incorrects.'; m.className='msg err'; }
+}
+async function forgotPw(){
+  const email=(document.getElementById('loginEmail').value||'').trim();
+  const m=document.getElementById('loginMsg');
+  if(!email){ m.textContent='Saisissez d’abord votre email ci-dessus, puis cliquez sur « Mot de passe oublié ? ».'; m.className='msg err'; return; }
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(email,{ redirectTo: location.origin+location.pathname });
+    if(error) throw error;
+    m.textContent='📧 Si un compte existe pour cet email, un lien de réinitialisation vient d’être envoyé (pensez aux indésirables).'; m.className='msg ok';
+  }catch(e){ m.textContent='Erreur : '+(e.message||e); m.className='msg err'; }
+}
+function showSetNewPw(){
+  const o=document.getElementById('loginOverlay'); if(o) o.classList.remove('hidden');
+  document.getElementById('loginForm').classList.add('hidden');
+  document.getElementById('setpassForm').classList.remove('hidden');
+  document.getElementById('loginTitle').textContent='Nouveau mot de passe';
+  document.getElementById('loginSub').textContent='Choisissez un nouveau mot de passe pour votre compte Salad&Co.';
+}
+async function applyNewPw(){
+  const v=document.getElementById('newPass').value||'';
+  const m=document.getElementById('setpassMsg');
+  if(v.length<6){ m.textContent='Mot de passe trop court (min. 6).'; m.className='msg err'; return; }
+  m.textContent='Enregistrement…'; m.className='msg';
+  try{
+    const { error } = await sb.auth.updateUser({ password:v });
+    if(error) throw error;
+    m.textContent='🔑 Mot de passe enregistré ✓'; m.className='msg ok';
+    document.getElementById('setpassForm').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+    document.getElementById('loginTitle').textContent='Suivi Primes — Salad&Co';
+    document.getElementById('loginSub').textContent='Accès réservé. Connectez-vous avec votre email et votre mot de passe Salad&Co.';
+    try{ if(history.replaceState) history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session) await onSignedIn(session);
+  }catch(e){ m.textContent='Erreur : '+(e.message||e); m.className='msg err'; }
+}
+async function changeMyPw(){
+  const v=prompt('Nouveau mot de passe (min. 6 caractères) :');
+  if(v===null) return;
+  if((v||'').length<6){ toast('Mot de passe trop court (min. 6)'); return; }
+  try{ const { error } = await sb.auth.updateUser({ password:v }); if(error) throw error; toast('🔑 Mot de passe mis à jour'); }
+  catch(e){ toast('Erreur : '+(e.message||e)); }
+}
+async function doLogout(){ try{ await sb.auth.signOut(); }catch(e){} location.reload(); }
+
+/* ============ CALCULS ============ */
+const round=(v,d=0)=>{const f=Math.pow(10,d);return Math.round(v*f)/f;};
+function avg(arr){const v=arr.filter(x=>x!==''&&x!==null&&x!==undefined&&!isNaN(x)).map(Number);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;}
+function coefFromTable(val,table){
+  if(val===null||val===undefined||val===''||isNaN(val)) return null;
+  const v=Number(val);
+  for(const b of table){ if(v>=b.min && v<=b.max) return b.coef; }
+  return null;
+}
+function tourCoef(moy){ if(moy===null) return null; return moy>=DATA.params.tourObj?1:0; }
+
+// Retourne l'ensemble des coefs + COEF OPE pour un magasin/trimestre
+function computeStoreQ(store,q){
+  const n=(DATA.notes[store]||{})[q]||{};
+  const tourMoy = avg(n.tour||[]);
+  const elearnMoy = avg(n.elearning||[]);
+  const nsf = (n.nsf===''||n.nsf===undefined)?null:n.nsf;
+  const analyse = (n.analyse===''||n.analyse===undefined)?null:n.analyse;
+  const cTour = tourCoef(tourMoy);
+  const cNsf = coefFromTable(nsf,DATA.params.nsfTable);
+  const cAna = coefFromTable(analyse,DATA.params.analyseTable);
+  const cElearn = coefFromTable(elearnMoy,DATA.params.analyseTable);
+  const coefs=[cTour,cNsf,cAna,cElearn].filter(x=>x!==null);
+  const coefOpe = coefs.length ? coefs.reduce((a,b)=>a+b,0)/coefs.length : null;
+  return {tourMoy,elearnMoy,nsf,analyse,cTour,cNsf,cAna,cElearn,coefOpe,n};
+}
+
+function computePrime(mg,q){
+  const p=(DATA.primes[q]||{})[mg.id]||{};
+  const w=DATA.params.weights[mg.type]||DATA.params.weights.standard;
+  const enjeu=Number(mg.enjeu)||0;
+  const sq=computeStoreQ(mg.store,q);
+  const coefOpe = (p.coefOverride!==null&&p.coefOverride!==undefined&&p.coefOverride!=='')?Number(p.coefOverride):sq.coefOpe;
+  // Marge
+  const hasMarge = p.margeObj!==undefined&&p.margeObj!==''&&p.margeReel!==undefined&&p.margeReel!=='';
+  const margeOk = hasMarge ? (Number(p.margeReel)>=Number(p.margeObj)) : false;
+  const mMarge = margeOk ? enjeu*w.marge : 0;
+  // Coef ope
+  const mCoef = (coefOpe!==null&&coefOpe!==undefined)? enjeu*w.coefope*coefOpe : 0;
+  // NPS
+  const npsV = (p.nps===undefined||p.nps==='')?null:Number(p.nps);
+  const mNps = (npsV!==null && w.nps>0)? enjeu*w.nps*npsV : 0;
+  const total = mMarge+mCoef+mNps;
+  return {enjeu,coefOpe,margeOk,hasMarge,mMarge,mCoef,mNps,npsV,total,w,p,sq};
+}
+
+/* ============ RENDER : NOTES ============ */
+let qNotes='T1', qPrimes='T2', qSyn='T2', qFiche='T2';
+let ficheSelected=null; // Set des restaurants cochés pour la fiche/PDF
+
+function coefSpan(c){
+  if(c===null||c===undefined) return '<span class="muted">–</span>';
+  const cls = c>=1?'c1':(c>=0.75?'c075':'c0');
+  return `<span class="coef ${cls}">${c.toFixed(2)}</span>`;
+}
+
+function renderQSelectors(){
+  const mk=(host,cur,cb)=>{
+    host.innerHTML='';
+    QUARTERS.forEach(q=>{
+      const b=document.createElement('button');
+      b.textContent=q; if(q===cur)b.className='active';
+      b.onclick=()=>cb(q); host.appendChild(b);
+    });
+  };
+  mk(document.getElementById('qselNotes'),qNotes,q=>{qNotes=q;renderNotes();});
+  mk(document.getElementById('qselPrimes'),qPrimes,q=>{qPrimes=q;renderPrimes();});
+  mk(document.getElementById('qselSyn'),qSyn,q=>{qSyn=q;renderSynth();});
+  mk(document.getElementById('qselFiche'),qFiche,q=>{qFiche=q;renderFiche();});
+}
+
+function renderNotes(){
+  renderQSelectors();
+  const t=document.getElementById('notesTable');
+  let h=`<thead><tr>
+    <th class="name">Magasin</th>
+    <th colspan="3">Tour Client (3 relevés)</th><th>Moy.</th><th>Coef</th>
+    <th>NSF</th><th>Coef</th>
+    <th>Analyse %</th><th>Coef</th>
+    <th colspan="3">E-learning (3 relevés)</th><th>Moy.</th><th>Coef</th>
+    <th>COEF OPE</th><th></th>
+  </tr></thead><tbody>`;
+  DATA.stores.forEach(store=>{
+    const n=((DATA.notes[store]||{})[qNotes])||{tour:[],nsf:'',analyse:'',elearning:[]};
+    const c=computeStoreQ(store,qNotes);
+    const tv=[0,1,2].map(i=>(n.tour&&n.tour[i]!==undefined&&n.tour[i]!==null)?n.tour[i]:'');
+    const ev=[0,1,2].map(i=>(n.elearning&&n.elearning[i]!==undefined&&n.elearning[i]!==null)?n.elearning[i]:'');
+    h+=`<tr><td class="name">${store}</td>`;
+    tv.forEach((v,i)=>h+=`<td><input type="number" value="${v}" onchange="setNote('${store}','tour',${i},this.value)"></td>`);
+    h+=`<td><b>${c.tourMoy!==null?round(c.tourMoy):'–'}</b></td><td>${coefSpan(c.cTour)}</td>`;
+    h+=`<td><input type="number" value="${n.nsf??''}" onchange="setNote('${store}','nsf',null,this.value)"></td><td>${coefSpan(c.cNsf)}</td>`;
+    h+=`<td><input type="number" step="0.01" value="${n.analyse??''}" onchange="setNote('${store}','analyse',null,this.value)"></td><td>${coefSpan(c.cAna)}</td>`;
+    ev.forEach((v,i)=>h+=`<td><input type="number" value="${v}" onchange="setNote('${store}','elearning',${i},this.value)"></td>`);
+    h+=`<td><b>${c.elearnMoy!==null?round(c.elearnMoy):'–'}</b></td><td>${coefSpan(c.cElearn)}</td>`;
+    h+=`<td>${c.coefOpe!==null?'<b>'+c.coefOpe.toFixed(2)+'</b>':'<span class=muted>–</span>'}</td>`;
+    h+=`<td><button class="del" title="Supprimer le magasin" onclick="delStore('${store}')">×</button></td></tr>`;
+  });
+  h+='</tbody>';
+  t.innerHTML=h;
+  refreshStoreList();
+}
+
+function setNote(store,field,idx,val){
+  DATA.notes[store]=DATA.notes[store]||{};
+  const n=DATA.notes[store][qNotes]=DATA.notes[store][qNotes]||{tour:[],nsf:'',analyse:'',elearning:[]};
+  const num = val===''?'':Number(val);
+  if(field==='tour'||field==='elearning'){ n[field]=n[field]||[]; n[field][idx]= val===''?null:Number(val); }
+  else { n[field]=num; }
+  save(); renderNotes();
+}
+function addStore(){
+  const name=prompt('Nom du nouveau magasin :');
+  if(!name) return;
+  if(DATA.stores.includes(name)){toast('Ce magasin existe déjà');return;}
+  DATA.stores.push(name); save(); renderNotes();
+}
+function delStore(store){
+  if(!confirm('Supprimer le magasin « '+store+' » et ses notes ?')) return;
+  DATA.stores=DATA.stores.filter(s=>s!==store); delete DATA.notes[store];
+  save(); renderNotes();
+}
+
+/* ============ RENDER : ROSTER + PRIMES ============ */
+function renderRoster(){
+  const t=document.getElementById('rosterTable');
+  let h=`<thead><tr><th class="name">Magasin</th><th>Rôle</th><th>Matricule</th><th>Enjeu (€)</th><th>Type</th><th></th></tr></thead><tbody>`;
+  DATA.managers.forEach(mg=>{
+    h+=`<tr>
+      <td class="name">${mg.store}</td>
+      <td>${mg.role}</td>
+      <td>${mg.mat||'–'}</td>
+      <td>${(Number(mg.enjeu)||0).toLocaleString('fr-FR')} €</td>
+      <td><span class="tag ${mg.type}">${mg.type==='solo'?'Solo':'Standard'}</span></td>
+      <td><button class="del" onclick="delManager('${mg.id}')">×</button></td>
+    </tr>`;
+  });
+  if(!DATA.managers.length) h+=`<tr><td colspan="6" class="muted">Aucun manager. Ajoutez-en ci-dessous.</td></tr>`;
+  h+='</tbody>'; t.innerHTML=h;
+  refreshStoreList();
+}
+function addManager(){
+  const store=document.getElementById('nmStore').value.trim();
+  const mat=document.getElementById('nmMat').value.trim();
+  if(!store){toast('Indiquez un magasin');return;}
+  DATA.managers.push({
+    id:'m'+Date.now(),
+    store, role:document.getElementById('nmRole').value,
+    mat, enjeu:Number(document.getElementById('nmEnjeu').value)||0,
+    type:document.getElementById('nmType').value
+  });
+  document.getElementById('nmMat').value='';
+  save(); renderRoster(); renderPrimes();
+}
+function delManager(id){
+  DATA.managers=DATA.managers.filter(m=>m.id!==id);
+  Object.values(DATA.primes).forEach(q=>delete q[id]);
+  save(); renderRoster(); renderPrimes();
+}
+
+function renderPrimes(){
+  renderQSelectors();
+  renderRoster();
+  const w=DATA.params.weights;
+  document.getElementById('primeHint').innerHTML =
+    `Pondérations actives — <b>Standard</b> : Marge ${pct(w.standard.marge)} · COEF OPE ${pct(w.standard.coefope)} · NPS ${pct(w.standard.nps)} &nbsp;|&nbsp; <b>Solo</b> : Marge ${pct(w.solo.marge)} · COEF OPE ${pct(w.solo.coefope)}. Le COEF OPE est repris des notes du magasin (modifiable par ligne).`;
+  const t=document.getElementById('primeTable');
+  let h=`<thead><tr>
+    <th class="name">Magasin</th><th>Rôle</th><th>Enjeu</th>
+    <th>Marge OBJ %</th><th>Marge Réel %</th><th>Marge ✓</th>
+    <th>COEF OPE</th><th>NPS (0–1)</th><th>Total prime</th>
+  </tr></thead><tbody>`;
+  DATA.primes[qPrimes]=DATA.primes[qPrimes]||{};
+  let grand=0;
+  DATA.managers.forEach(mg=>{
+    const p=DATA.primes[qPrimes][mg.id]=DATA.primes[qPrimes][mg.id]||{margeObj:'',margeReel:'',nps:'',coefOverride:null};
+    const r=computePrime(mg,qPrimes); grand+=r.total;
+    const npsCell = mg.type==='solo'
+      ? `<td class="muted">n/a</td>`
+      : `<td><input type="number" step="0.5" min="0" max="1" style="width:64px" value="${p.nps??''}" onchange="setPrime('${mg.id}','nps',this.value)"></td>`;
+    const coefShown = r.coefOpe!==null&&r.coefOpe!==undefined? r.coefOpe.toFixed(2) : '';
+    h+=`<tr>
+      <td class="name">${mg.store} <span class="tag ${mg.type}">${mg.type==='solo'?'S':'Std'}</span></td>
+      <td>${mg.role}</td>
+      <td>${r.enjeu.toLocaleString('fr-FR')} €</td>
+      <td><input type="number" step="0.01" style="width:78px" value="${p.margeObj??''}" onchange="setPrime('${mg.id}','margeObj',this.value)"></td>
+      <td><input type="number" step="0.01" style="width:78px" value="${p.margeReel??''}" onchange="setPrime('${mg.id}','margeReel',this.value)"></td>
+      <td>${r.hasMarge?(r.margeOk?'<span class="pill ok">OK</span>':'<span class="pill ko">KO</span>'):'<span class="muted">–</span>'}</td>
+      <td><input type="number" step="0.01" min="0" max="1" style="width:64px" placeholder="${coefShown}" value="${p.coefOverride??''}" onchange="setPrime('${mg.id}','coefOverride',this.value)"></td>
+      ${npsCell}
+      <td><b>${eur(r.total)}</b></td>
+    </tr>`;
+  });
+  if(!DATA.managers.length) h+=`<tr><td colspan="9" class="muted">Ajoutez des managers pour saisir les primes.</td></tr>`;
+  h+=`</tbody><tfoot><tr class="totrow"><td colspan="8" style="text-align:right">Total ${qPrimes}</td><td>${eur(grand)}</td></tr></tfoot>`;
+  t.innerHTML=h;
+}
+function setPrime(id,field,val){
+  DATA.primes[qPrimes]=DATA.primes[qPrimes]||{};
+  const p=DATA.primes[qPrimes][id]=DATA.primes[qPrimes][id]||{margeObj:'',margeReel:'',nps:'',coefOverride:null};
+  p[field]= (field==='coefOverride'&&val==='')?null:val;
+  save(); renderPrimes();
+}
+
+/* ============ RENDER : SYNTHÈSE ============ */
+function renderSynth(){
+  renderQSelectors();
+  const q=qSyn; const host=document.getElementById('synthContent');
+  // KPIs
+  let totPrime=0, nbMarge=0, nbEval=0, sumCoef=0, nCoef=0;
+  DATA.managers.forEach(mg=>{const r=computePrime(mg,q); totPrime+=r.total; if(r.hasMarge){nbEval++; if(r.margeOk)nbMarge++;}});
+  DATA.stores.forEach(s=>{const c=computeStoreQ(s,q); if(c.coefOpe!==null){sumCoef+=c.coefOpe;nCoef++;}});
+  const coefMoy=nCoef?(sumCoef/nCoef):null;
+
+  let h=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px">
+      <h2 style="margin:0">Synthèse trimestre ${q}</h2>
+      <span class="muted">Salad&amp;Co — généré le ${new Date().toLocaleDateString('fr-FR')}</span>
+    </div></div>`;
+  h+=`<div class="kpi">
+      <div class="k"><div class="l">Total primes</div><div class="v">${eur(totPrime)}</div></div>
+      <div class="k"><div class="l">Managers</div><div class="v">${DATA.managers.length}</div></div>
+      <div class="k"><div class="l">Objectifs marge atteints</div><div class="v">${nbMarge}/${nbEval||'–'}</div></div>
+      <div class="k"><div class="l">COEF OPE moyen</div><div class="v">${coefMoy!==null?coefMoy.toFixed(2):'–'}</div></div>
+    </div>`;
+
+  // Tableau 1 — performance magasins
+  h+=`<div class="card"><h3>1 · Performance magasins — ${q}</h3><div class="tblwrap"><table>
+    <thead><tr>
+      <th class="name">Magasin</th>
+      <th>Tour Client</th><th>Coef</th>
+      <th>NSF</th><th>Coef</th>
+      <th>Analyse</th><th>Coef</th>
+      <th>E-learning</th><th>Coef</th>
+      <th>COEF OPE</th>
+    </tr></thead><tbody>`;
+  DATA.stores.forEach(s=>{
+    const c=computeStoreQ(s,q);
+    h+=`<tr><td class="name">${s}</td>
+      <td>${c.tourMoy!==null?round(c.tourMoy):'–'}</td><td>${coefSpan(c.cTour)}</td>
+      <td>${c.nsf??'–'}</td><td>${coefSpan(c.cNsf)}</td>
+      <td>${c.analyse!==null&&c.analyse!==''&&c.analyse!==undefined?round(c.analyse,2):'–'}</td><td>${coefSpan(c.cAna)}</td>
+      <td>${c.elearnMoy!==null?round(c.elearnMoy):'–'}</td><td>${coefSpan(c.cElearn)}</td>
+      <td>${c.coefOpe!==null?'<b>'+c.coefOpe.toFixed(2)+'</b>':'–'}</td></tr>`;
+  });
+  h+=`</tbody></table></div></div>`;
+
+  // Tableau 2 — primes par manager
+  h+=`<div class="card"><h3>2 · Primes par manager — ${q}</h3><div class="tblwrap"><table>
+    <thead><tr>
+      <th class="name">Magasin</th><th>Rôle</th><th>Matricule</th><th>Enjeu</th>
+      <th>Marge</th><th>COEF OPE</th><th>NPS</th><th>Total</th>
+    </tr></thead><tbody>`;
+  let grand=0;
+  DATA.managers.forEach(mg=>{
+    const r=computePrime(mg,q); grand+=r.total;
+    h+=`<tr>
+      <td class="name">${mg.store}</td><td>${mg.role}</td><td>${mg.mat||'–'}</td>
+      <td>${r.enjeu.toLocaleString('fr-FR')} €</td>
+      <td>${eur(r.mMarge)} ${r.hasMarge?(r.margeOk?'<span class="pill ok">OK</span>':'<span class="pill ko">KO</span>'):''}</td>
+      <td>${eur(r.mCoef)} <span class="muted">(${r.coefOpe!==null?r.coefOpe.toFixed(2):'–'})</span></td>
+      <td>${mg.type==='solo'?'<span class="muted">n/a</span>':eur(r.mNps)+(r.npsV!==null?' <span class="muted">('+r.npsV+')</span>':'')}</td>
+      <td><b>${eur(r.total)}</b></td>
+    </tr>`;
+  });
+  h+=`</tbody><tfoot><tr class="totrow"><td colspan="7" style="text-align:right">Total primes ${q}</td><td>${eur(grand)}</td></tr></tfoot></table></div></div>`;
+
+  host.innerHTML=h;
+}
+
+/* ============ RENDER : FICHE RESTAURANT ============ */
+function renderFiche(){
+  renderQSelectors();
+  const selHost=document.getElementById('ficheStoreSel');
+  const host=document.getElementById('ficheContent');
+  if(!selHost||!host) return;
+  // init : un seul restaurant coché par défaut
+  if(ficheSelected===null) ficheSelected = new Set(DATA.stores.length?[DATA.stores[0]]:[]);
+  // purge des restaurants supprimés
+  ficheSelected = new Set(DATA.stores.filter(s=>ficheSelected.has(s)));
+  // cases à cocher
+  selHost.innerHTML = DATA.stores.length
+    ? DATA.stores.map(s=>{
+        const on=ficheSelected.has(s);
+        const esc=s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<label class="chk"><input type="checkbox" ${on?'checked':''} onchange="ficheToggle('${esc}',this.checked)"><span>${s}</span></label>`;
+      }).join('')
+    : '<span class="muted">Aucun restaurant.</span>';
+  // aperçu / impression : uniquement les cochés
+  const chosen=DATA.stores.filter(s=>ficheSelected.has(s));
+  host.innerHTML = chosen.length
+    ? chosen.map((s,i)=>ficheBlock(s,qFiche,i>0)).join('')
+    : `<div class="card muted noprint">Cochez au moins un restaurant pour afficher sa fiche.</div>`;
+}
+function ficheToggle(store,on){ if(on)ficheSelected.add(store); else ficheSelected.delete(store); renderFiche(); }
+function ficheSelectAll(on){ ficheSelected = on ? new Set(DATA.stores) : new Set(); renderFiche(); }
+
+function ficheBlock(store,q,pageBreak){
+  const c=computeStoreQ(store,q);
+  const w=DATA.params.weights;
+  const mgs=DATA.managers.filter(m=>m.store===store);
+  let totalStore=0, mrows='';
+  mgs.forEach(mg=>{
+    const r=computePrime(mg,q); totalStore+=r.total;
+    mrows+=`<tr>
+      <td class="name">${mg.role}</td><td>${mg.mat||'–'}</td>
+      <td>${r.enjeu.toLocaleString('fr-FR')} €</td>
+      <td>${eur(r.mMarge)} ${r.hasMarge?(r.margeOk?'<span class="pill ok">OK</span>':'<span class="pill ko">KO</span>'):'<span class="muted">–</span>'}</td>
+      <td>${eur(r.mCoef)} <span class="muted">(${r.coefOpe!==null?r.coefOpe.toFixed(2):'–'})</span></td>
+      <td>${mg.type==='solo'?'<span class="muted">n/a</span>':eur(r.mNps)+(r.npsV!==null?' <span class="muted">('+r.npsV+')</span>':'')}</td>
+      <td><b>${eur(r.total)}</b></td>
+    </tr>`;
+  });
+  if(!mgs.length) mrows=`<tr><td colspan="7" class="muted">Aucun manager rattaché à ce restaurant.</td></tr>`;
+
+  return `<div class="card fiche-block" style="${pageBreak?'break-before:page;page-break-before:always;':''}">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;border-bottom:2px solid var(--green);padding-bottom:10px;margin-bottom:14px">
+      <div>
+        <h2 style="margin:0">${store}</h2>
+        <div class="muted" style="font-size:12px">Fiche de résultats — Trimestre ${q}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:800;color:var(--green-d);font-size:15px">🥗 Salad&amp;Co</div>
+        <div class="muted" style="font-size:11.5px">Éditée le ${new Date().toLocaleDateString('fr-FR')}</div>
+      </div>
+    </div>
+
+    <div class="kpi" style="margin-bottom:14px">
+      <div class="k"><div class="l">COEF OPE magasin</div><div class="v">${c.coefOpe!==null?c.coefOpe.toFixed(2):'–'}</div></div>
+      <div class="k"><div class="l">Total primes ${q}</div><div class="v">${eur(totalStore)}</div></div>
+      <div class="k"><div class="l">Managers concernés</div><div class="v">${mgs.length}</div></div>
+    </div>
+
+    <h3 style="margin:0 0 8px;font-size:14px;color:var(--green-d)">Performance du magasin — ${q}</h3>
+    <div class="tblwrap" style="margin-bottom:16px"><table>
+      <thead><tr><th class="name">Indicateur</th><th>Résultat</th><th>Coefficient</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Tour Client (moy. 3 relevés)</td><td>${c.tourMoy!==null?round(c.tourMoy):'–'}</td><td>${coefSpan(c.cTour)}</td></tr>
+        <tr><td class="name">NSF</td><td>${c.nsf??'–'}</td><td>${coefSpan(c.cNsf)}</td></tr>
+        <tr><td class="name">Analyse</td><td>${c.analyse!==null&&c.analyse!==''&&c.analyse!==undefined?round(c.analyse,2):'–'}</td><td>${coefSpan(c.cAna)}</td></tr>
+        <tr><td class="name">E-learning (moy. 3 relevés)</td><td>${c.elearnMoy!==null?round(c.elearnMoy):'–'}</td><td>${coefSpan(c.cElearn)}</td></tr>
+        <tr class="totrow"><td class="name">COEF OPE (moyenne des coefs disponibles)</td><td></td><td>${c.coefOpe!==null?c.coefOpe.toFixed(2):'–'}</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3 style="margin:0 0 8px;font-size:14px;color:var(--green-d)">Primes des managers — ${q}</h3>
+    <div class="tblwrap"><table>
+      <thead><tr><th class="name">Rôle</th><th>Matricule</th><th>Enjeu</th><th>Marge</th><th>COEF OPE</th><th>NPS</th><th>Total</th></tr></thead>
+      <tbody>${mrows}</tbody>
+      <tfoot><tr class="totrow"><td colspan="6" style="text-align:right">Total restaurant ${q}</td><td>${eur(totalStore)}</td></tr></tfoot>
+    </table></div>
+
+    <p class="muted" style="font-size:11.5px;margin:12px 0 0;line-height:1.5">
+      <b>Rappel du calcul —</b> Prime = Enjeu × [ part Marge (versée si Réel ≥ Objectif) + part COEF OPE du magasin + part NPS ].
+      Pondérations : Standard ${pct(w.standard.marge)} marge / ${pct(w.standard.coefope)} COEF OPE / ${pct(w.standard.nps)} NPS ;
+      Solo ${pct(w.solo.marge)} marge / ${pct(w.solo.coefope)} COEF OPE.
+    </p>
+  </div>`;
+}
+
+/* ============ RENDER : PARAMS ============ */
+function pct(x){return Math.round(x*100)+' %';}
+function renderParams(){
+  document.getElementById('pTourObj').value=DATA.params.tourObj;
+  renderConvTable('tblNSF','nsfTable');
+  renderConvTable('tblAnalyse','analyseTable');
+  renderWeights();
+}
+function renderConvTable(id,key){
+  const tb=DATA.params[key];
+  let h=`<thead><tr><th>De</th><th>À</th><th>Coefficient</th></tr></thead><tbody>`;
+  tb.forEach((b,i)=>{
+    h+=`<tr>
+      <td><input type="number" value="${b.min}" style="width:70px" onchange="setConv('${key}',${i},'min',this.value)"></td>
+      <td><input type="number" value="${b.max}" style="width:70px" onchange="setConv('${key}',${i},'max',this.value)"></td>
+      <td><input type="number" step="0.05" value="${b.coef}" style="width:70px" onchange="setConv('${key}',${i},'coef',this.value)"></td>
+    </tr>`;
+  });
+  h+='</tbody>';
+  document.getElementById(id).innerHTML=h;
+}
+function setConv(key,i,field,val){DATA.params[key][i][field]=Number(val);save();refreshAll();}
+function setParam(k,v){DATA.params[k]=Number(v);save();refreshAll();}
+function renderWeights(){
+  const w=DATA.params.weights;
+  const t=document.getElementById('weightTable');
+  const rowsC=[['standard','Standard (Directeur + Adjoints)'],['solo','Solo (Directeur seul)']];
+  let h=`<thead><tr><th class="name">Type de prime</th><th>Marge – Frais</th><th>COEF OPE</th><th>NPS</th><th>Total</th></tr></thead><tbody>`;
+  rowsC.forEach(([k,lbl])=>{
+    const o=w[k]; const tot=(o.marge+o.coefope+o.nps);
+    h+=`<tr><td class="name">${lbl}</td>
+      <td><input type="number" step="0.05" value="${o.marge}" onchange="setWeight('${k}','marge',this.value)"> </td>
+      <td><input type="number" step="0.05" value="${o.coefope}" onchange="setWeight('${k}','coefope',this.value)"></td>
+      <td><input type="number" step="0.05" value="${o.nps}" onchange="setWeight('${k}','nps',this.value)"></td>
+      <td><b style="color:${Math.abs(tot-1)<0.001?'var(--ok)':'var(--amber)'}">${pct(tot)}</b></td></tr>`;
+  });
+  h+='</tbody>'; t.innerHTML=h;
+}
+function setWeight(type,field,val){DATA.params.weights[type][field]=Number(val);save();renderWeights();refreshAll();}
+
+/* ============ IMPORT / EXPORT ============ */
+function exportJSON(){
+  const blob=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
+  dl(blob,'suivi-primes-'+dateStamp()+'.json'); toast('Export JSON prêt');
+}
+function importJSON(e){
+  const f=e.target.files[0]; if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);
+      if(!d.params||!d.stores){toast('Fichier invalide');return;}
+      DATA=d; save(); refreshAll(); toast('Données importées ✓');
+    }catch(err){toast('Fichier illisible');}
+  };
+  rd.readAsText(f); e.target.value='';
+}
+function exportNotesCSV(){
+  let rows=[['Magasin','Trimestre','TourMoy','CoefTour','NSF','CoefNSF','Analyse','CoefAna','ElearnMoy','CoefElearn','COEF_OPE']];
+  DATA.stores.forEach(s=>QUARTERS.forEach(q=>{
+    const c=computeStoreQ(s,q);
+    if((DATA.notes[s]||{})[q]) rows.push([s,q,fmt(c.tourMoy),f2(c.cTour),c.nsf??'',f2(c.cNsf),c.analyse??'',f2(c.cAna),fmt(c.elearnMoy),f2(c.cElearn),f2(c.coefOpe)]);
+  }));
+  dlCSV(rows,'notes-'+dateStamp()+'.csv'); toast('Export notes CSV prêt');
+}
+function exportSynthCSV(){
+  const q=qSyn; let rows=[['SYNTHÈSE '+q]];
+  rows.push([],['Performance magasins'],['Magasin','TourMoy','CoefTour','NSF','CoefNSF','Analyse','CoefAna','ElearnMoy','CoefElearn','COEF_OPE']);
+  DATA.stores.forEach(s=>{const c=computeStoreQ(s,q);rows.push([s,fmt(c.tourMoy),f2(c.cTour),c.nsf??'',f2(c.cNsf),c.analyse??'',f2(c.cAna),fmt(c.elearnMoy),f2(c.cElearn),f2(c.coefOpe)]);});
+  rows.push([],['Primes par manager'],['Magasin','Rôle','Matricule','Enjeu','Marge','COEF_OPE','NPS','Total']);
+  let grand=0;
+  DATA.managers.forEach(mg=>{const r=computePrime(mg,q);grand+=r.total;rows.push([mg.store,mg.role,mg.mat||'',r.enjeu,round(r.mMarge),round(r.mCoef),mg.type==='solo'?'n/a':round(r.mNps),round(r.total)]);});
+  rows.push(['','','','','','','Total',round(grand)]);
+  dlCSV(rows,'synthese-'+q+'-'+dateStamp()+'.csv'); toast('Export synthèse CSV prêt');
+}
+function resetAll(){
+  if(!confirm('Réinitialiser toutes les données PARTAGÉES et revenir à l\'exemple initial ?\n\nAttention : cette action est visible par toutes les personnes connectées.'))return;
+  DATA=freshSeed(); pushData(); refreshAll(); toast('Réinitialisé');
+}
+
+/* ============ UTILS ============ */
+const f2=c=>c===null||c===undefined?'':String(c).replace('.',',');
+const fmt=v=>v===null||v===undefined?'':round(v);
+function eur(v){return (Math.round(v)).toLocaleString('fr-FR')+' €';}
+function dateStamp(){const d=new Date();return d.toISOString().slice(0,10);}
+function dl(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);}
+function dlCSV(rows,name){
+  const csv=rows.map(r=>r.map(c=>{const s=String(c??'');return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(';')).join('\n');
+  dl(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}),name);
+}
+function refreshStoreList(){
+  const dl=document.getElementById('storeList');
+  if(dl) dl.innerHTML=DATA.stores.map(s=>`<option value="${s}">`).join('');
+}
+let toastTimer=null;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function refreshAll(){renderNotes();renderPrimes();renderSynth();renderFiche();renderParams();}
+
+/* ============ NAVIGATION ============ */
+document.querySelectorAll('#nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('panel-'+b.dataset.tab).classList.add('active');
+    if(b.dataset.tab==='synthese')renderSynth();
+    if(b.dataset.tab==='fiche')renderFiche();
+  };
 });
-sb.auth.onAuthStateChange(function(_e,s){ load(s); });
-sb.auth.getSession().then(function(x){ load(x.data.session); });
-</script></body></html>
+
+/* ============ INIT ============ */
+initAuth();
+</script>
+</body>
+</html>

@@ -1,32 +1,368 @@
-{
-  "name": "Accès Salad&Co",
-  "short_name": "Accès",
-  "description": "Gestion des accès collaborateurs Salad&Co",
-  "start_url": "../acces-saladco.html",
-  "scope": "../",
-  "display": "standalone",
-  "orientation": "any",
-  "background_color": "#f6f7f4",
-  "theme_color": "#6cbe2e",
-  "lang": "fr",
-  "icons": [
-    {
-      "src": "../assets/icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "../assets/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "../assets/icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ]
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion des accès · Salad&Co</title>
+<style>
+:root{--green:#6cbe2e;--green-d:#4f9a1c;--green-l:#eaf7dd;--ink:#1b1d1a;--ink-soft:#4a4f47;--muted:#8a9184;--paper:#fff;--bg:#f4f6f0;--line:#e5e9de;--gold:#f2b21e;--red:#d64545;--shadow:0 6px 24px rgba(30,50,15,.08);--shadow-lg:0 18px 50px rgba(30,50,15,.16);--r:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select{font-family:inherit}
+.hidden{display:none!important}
+/* Top bar */
+.topbar{position:sticky;top:0;z-index:40;background:var(--ink);color:#fff;display:flex;align-items:center;gap:14px;padding:12px 22px}
+.brand{font-weight:900;font-size:20px;transform:skewX(-6deg);color:var(--green)}
+.brand span{color:#fff;font-weight:800;transform:skewX(6deg);display:inline-block}
+.tb-sub{font-size:13px;color:#cfd6c8}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px}
+.tb-mail{color:#cfd6c8}
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--green);color:#fff;font-weight:700;padding:10px 16px;border-radius:10px;font-size:14px;transition:.15s}
+.btn:hover{background:var(--green-d)}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{background:var(--bg)}
+.btn.small{padding:7px 12px;font-size:13px}
+.btn.danger{background:var(--red)}
+/* Wrap */
+.wrap{max-width:1200px;margin:0 auto;padding:26px 22px 60px}
+.page-head{margin-bottom:18px}
+.page-head h1{font-size:26px;letter-spacing:-.4px}
+.page-head p{color:var(--ink-soft);margin-top:4px;font-size:14.5px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:0;overflow:hidden}
+.card-hd{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+.card-hd h2{font-size:16px}
+.card-hd .sp{flex:1}
+/* Table */
+.tbl-scroll{overflow-x:auto}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:14px}
+th,td{padding:11px 12px;text-align:left;white-space:nowrap}
+thead th{position:sticky;top:0;background:var(--green-l);color:var(--ink);font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid var(--line)}
+thead th.appcol{text-align:center}
+tbody tr:nth-child(even){background:#fafcf7}
+tbody tr:hover{background:var(--green-l)}
+td.usercell{position:sticky;left:0;background:inherit;font-weight:600;border-right:1px solid var(--line)}
+td.usercell .mail{font-size:12.5px;color:var(--muted);font-weight:400}
+th.usercol{position:sticky;left:0;z-index:2;background:var(--green-l);border-right:1px solid var(--line)}
+td.appcell{text-align:center}
+select.acc{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:13px;min-width:118px;color:var(--ink);cursor:pointer}
+select.acc[data-role=""]{color:var(--muted)}
+select.acc[data-role="Admin"]{border-color:var(--green);background:var(--green-l);font-weight:700}
+select.acc[data-role="Manager"]{border-color:var(--gold);background:#fdf6e3;font-weight:600}
+select.acc[data-role="Consultant"]{border-color:#9cc6e8;background:#eef6fc}
+.rm-btn{color:var(--muted);font-size:15px;padding:4px 6px;border-radius:6px}
+.rm-btn:hover{color:var(--red);background:#fbeaea}
+.adduser{display:flex;gap:8px;align-items:center;padding:14px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+.adduser input{padding:9px 12px;border:1px solid var(--line);border-radius:9px;font-size:14px;min-width:260px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-soft);margin-top:14px;padding:0 4px}
+.legend b{font-weight:700}
+.pill{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.hint{font-size:12.5px;color:var(--muted);padding:10px 18px 16px}
+/* Login */
+.auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(1200px 500px at 50% -10%,#e8f4da,transparent),var(--bg)}
+.auth-card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow-lg);padding:34px 30px;width:100%;max-width:400px}
+.auth-logo{width:54px;height:54px;border-radius:14px;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px}
+.auth-card h1{text-align:center;font-size:22px;margin-bottom:4px}
+.auth-card p.sub{text-align:center;color:var(--muted);font-size:13.5px;margin-bottom:22px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink-soft)}
+.field input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:15px}
+.field input:focus{outline:none;border-color:var(--green)}
+.auth-err{background:#fbeaea;border:1px solid #f2c4c4;color:#a33;font-size:13px;padding:9px 12px;border-radius:9px;margin-bottom:14px}
+.spin{width:22px;height:22px;border:3px solid var(--green-l);border-top-color:var(--green);border-radius:50%;animation:sp 1s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.center-load{min-height:100vh;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;color:var(--muted)}
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(30px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;box-shadow:var(--shadow-lg);opacity:0;transition:.25s;z-index:100;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--red)}
+#toast.gold{background:var(--gold);color:#3a2c00}
+.denied{max-width:440px;margin:80px auto;text-align:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:34px;box-shadow:var(--shadow)}
+.denied h2{font-size:20px;margin-bottom:8px}
+.denied p{color:var(--ink-soft);font-size:14px;margin-bottom:18px}
+/* Restaurants (Passeport) */
+.resto-chip{margin-top:6px;display:inline-flex;align-items:center;gap:4px;max-width:130px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12px;color:var(--ink-soft);cursor:pointer;line-height:1.1}
+.resto-chip:hover{border-color:var(--green);background:var(--green-l)}
+.resto-chip.set{border-color:var(--green);background:var(--green-l);color:var(--green-d);font-weight:600}
+.resto-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.resto-sum{margin-top:6px;font-size:11.5px;color:var(--muted)}
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(20,30,10,.45);display:flex;align-items:center;justify-content:center;z-index:80;padding:20px}
+.modal-box{background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:460px;max-height:85vh;overflow:auto;padding:24px}
+.modal-box h3{font-size:17px;margin-bottom:6px}
+.mhint{font-size:13px;color:var(--ink-soft);margin-bottom:14px}
+.rchk-grid{display:flex;flex-wrap:wrap;gap:8px}
+.rchk{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px;cursor:pointer;background:#fff}
+.rchk:hover{background:var(--bg)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+</style>
+<!-- SALADCO — chrome commun (début) -->
+<link rel="stylesheet" href="assets/css/saladco.css">
+<link rel="manifest" href="assets/manifests/acces.webmanifest">
+<meta name="theme-color" content="#6cbe2e">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Accès">
+<script defer src="assets/js/saladco-nav.js" data-app="acces"></script>
+<!-- SALADCO — chrome commun (fin) -->
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadView" class="center-load"><div class="spin"></div><div>Chargement…</div></div>
+
+<!-- LOGIN -->
+<div id="authView" class="auth hidden">
+  <div class="auth-card">
+    <div class="auth-logo">🔐</div>
+    <h1>Gestion des accès</h1>
+    <p class="sub">Salad&Co — espace administrateur</p>
+    <div id="authErr" class="auth-err hidden"></div>
+    <div class="field"><label>Email</label><input id="le" type="email" placeholder="prenom.nom@saladandco.fr" autocomplete="username"></div>
+    <div class="field"><label>Mot de passe</label><input id="lp" type="password" placeholder="Votre mot de passe" autocomplete="current-password"></div>
+    <button class="btn" style="width:100%;justify-content:center" onclick="doLogin()">Se connecter</button>
+  </div>
+</div>
+
+<!-- DENIED -->
+<div id="deniedView" class="hidden">
+  <div class="denied">
+    <h2>Accès réservé</h2>
+    <p>Ton compte n'est pas autorisé à gérer les accès. Contacte un administrateur pour être ajouté.</p>
+    <button class="btn ghost" onclick="logout()">Se déconnecter</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="hidden">
+  <div class="topbar">
+    <div class="brand">Accès<span>&nbsp;Salad&Co</span></div>
+    <div class="tb-sub">Gestion centralisée des liens</div>
+    <div class="tb-right"><span class="tb-mail" id="meMail"></span><button class="btn ghost small" onclick="logout()">Déconnexion</button></div>
+  </div>
+  <div class="wrap">
+    <div class="page-head">
+      <h1>🗂️ Autorisations d'accès</h1>
+      <p>Pour chaque personne, choisis les applications accessibles et le rôle associé. Les changements sont enregistrés immédiatement et appliqués au portail.</p>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <h2>Matrice des accès</h2>
+        <div class="sp"></div>
+        <button class="btn ghost small" onclick="loadAll()">↻ Rafraîchir</button>
+      </div>
+      <div class="tbl-scroll">
+        <table id="matrix">
+          <thead id="matHead"></thead>
+          <tbody id="matBody"></tbody>
+        </table>
+      </div>
+      <div class="adduser">
+        <input id="newUser" type="email" placeholder="nouvel.utilisateur@saladandco.fr">
+        <button class="btn small" onclick="addUser()">+ Ajouter un utilisateur</button>
+      </div>
+      <div class="hint">Astuce : « — » signifie aucun accès (l'application n'apparaît pas dans le portail de la personne). Retirer un utilisateur supprime tous ses accès.</div>
+    </div>
+    <div class="legend">
+      <span><span class="pill" style="background:var(--green-l);border:1px solid var(--green)"></span><b>Admin</b> : tous les droits</span>
+      <span><span class="pill" style="background:#fdf6e3;border:1px solid var(--gold)"></span><b>Manager</b> : droits intermédiaires</span>
+      <span><span class="pill" style="background:#eef6fc;border:1px solid #9cc6e8"></span><b>Consultant</b> : lecture seule</span>
+      <span><span class="pill" style="background:#fff;border:1px solid var(--line)"></span><b>—</b> : aucun accès</span>
+    </div>
+  </div>
+</div>
+
+<div id="overlay" class="overlay hidden"><div id="modal" class="modal-box"></div></div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPA_URL='https://wplolvjziqqvvcydvfxs.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbG9sdmp6aXFxdnZjeWR2ZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTAwNzYsImV4cCI6MjEwMDEyNjA3Nn0.DD2sqXCHcVyETPxb78QiBzH21r73y2CAY5LdXCH5k9w';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+const ROLES=['Consultant','Manager','Admin'];
+
+let ME=null;               // {email}
+let APPS=[];               // page_acl rows
+let USERS=[];              // list of emails (rows)
+let GRANTS={};             // email -> { onglet_id -> role }
+let ALLOWED=new Set();     // allowed_users emails (lowercase)
+let PP={};                 // email(lower) -> { id, role } depuis pp_profiles
+let PP_REST=[];            // restaurants du Passeport [{id,name}]
+let PP_ASSIGN={};          // profile_id -> [restaurant_id]
+let PP_ONGLET_ID=null;     // id de l'onglet "Passeport" dans page_acl
+let ME_PP_ADMIN=false;     // l'utilisateur courant est-il admin du Passeport ?
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function show(view){['loadView','authView','deniedView','appView'].forEach(v=>$(v).classList.toggle('hidden',v!==view));}
+let toastT=null;
+function toast(msg,kind){const t=$('toast');t.textContent=msg;t.className='show'+(kind?' '+kind:'');clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2600);}
+function showAuthErr(m){const e=$('authErr');e.textContent=m;e.classList.remove('hidden');}
+function clearAuthErr(){$('authErr').classList.add('hidden');}
+
+async function doLogin(){
+  clearAuthErr();
+  const email=$('le').value.trim(), password=$('lp').value;
+  if(!email||!password) return showAuthErr('Email et mot de passe requis.');
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error) return showAuthErr('Identifiants incorrects.');
+  await afterLogin();
 }
+async function logout(){ await sb.auth.signOut(); ME=null; show('authView'); }
+
+async function afterLogin(){
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user){ show('authView'); return; }
+  ME={email:(user.email||'').toLowerCase()};
+  // Vérifie l'autorisation (table allowed_users, protégée par RLS is_allowed())
+  const {data:allow,error}=await sb.from('allowed_users').select('email');
+  ALLOWED=new Set((allow||[]).map(a=>(a.email||'').toLowerCase()));
+  if(error || !ALLOWED.has(ME.email)){ show('deniedView'); return; }
+  $('meMail').textContent=ME.email;
+  show('appView');
+  await loadAll();
+}
+
+async function loadAll(){
+  const [appsRes,grantsRes,allowRes,ppProfRes,ppRestRes,ppAssignRes]=await Promise.all([
+    sb.from('page_acl').select('id,onglet,ordre,icone').order('ordre'),
+    sb.from('onglet_access').select('email,onglet_id,role'),
+    sb.from('allowed_users').select('email'),
+    sb.from('pp_profiles').select('id,email,role'),
+    sb.from('pp_restaurants').select('id,name').order('name'),
+    sb.from('pp_profile_restaurants').select('profile_id,restaurant_id')
+  ]);
+  if(appsRes.error){ toast('Erreur de chargement','err'); return; }
+  APPS=appsRes.data||[];
+  ALLOWED=new Set((allowRes.data||[]).map(a=>(a.email||'').toLowerCase()));
+  // Données Passeport (restrictions par restaurant)
+  PP_REST=ppRestRes.data||[];
+  PP={}; (ppProfRes.data||[]).forEach(p=>{ if(p.email) PP[p.email.toLowerCase()]={id:p.id,role:p.role}; });
+  PP_ASSIGN={}; (ppAssignRes.data||[]).forEach(a=>{ (PP_ASSIGN[a.profile_id]=PP_ASSIGN[a.profile_id]||[]).push(a.restaurant_id); });
+  PP_ONGLET_ID=(APPS.find(a=>(a.onglet||'').trim().toLowerCase()==='passeport')||{}).id||null;
+  ME_PP_ADMIN=!!(PP[ME.email]&&PP[ME.email].role==='admin');
+  GRANTS={};
+  const emailSet=new Set();
+  (grantsRes.data||[]).forEach(g=>{
+    const e=(g.email||'').toLowerCase(); emailSet.add(e);
+    if(!GRANTS[e]) GRANTS[e]={};
+    GRANTS[e][g.onglet_id]=g.role;   // dernier gagne (dédoublonnage à l'affichage)
+  });
+  ALLOWED.forEach(e=>emailSet.add(e));
+  USERS=[...emailSet].sort();
+  render();
+}
+
+function render(){
+  // En-tête
+  let h='<tr><th class="usercol">Utilisateur</th>';
+  APPS.forEach(a=>{ h+=`<th class="appcol">${esc(a.onglet)}</th>`; });
+  h+='<th></th></tr>';
+  $('matHead').innerHTML=h;
+  // Corps
+  if(!USERS.length){ $('matBody').innerHTML=`<tr><td colspan="${APPS.length+2}" style="color:var(--muted);text-align:center;padding:24px">Aucun utilisateur. Ajoute une adresse ci-dessous.</td></tr>`; return; }
+  let b='';
+  USERS.forEach(email=>{
+    const isAllowed=ALLOWED.has(email);
+    b+=`<tr><td class="usercell">${esc(email.split('@')[0])}<div class="mail">${esc(email)}${isAllowed?' · admin outils':''}</div></td>`;
+    APPS.forEach(a=>{
+      const cur=(GRANTS[email]&&GRANTS[email][a.id])||'';
+      let opts=`<option value="">—</option>`;
+      ROLES.forEach(r=>{ opts+=`<option value="${r}" ${cur===r?'selected':''}>${r}</option>`; });
+      let extra='';
+      if(a.id===PP_ONGLET_ID && ME_PP_ADMIN){
+        const pp=PP[email];
+        if(pp && pp.role==='admin'){ extra=`<div class="resto-sum">🏠 Tous</div>`; }
+        else if(pp){
+          const asg=PP_ASSIGN[pp.id]||[];
+          const names=asg.map(rid=>ppRestName(rid)).filter(Boolean);
+          const sum=names.length?(names.length===1?esc(names[0]):esc(names[0])+' +'+(names.length-1)):'Tous';
+          extra=`<button class="resto-chip ${names.length?'set':''}" title="Restaurants autorisés" onclick="managePpResto('${esc(email)}')">🏠 <span>${sum}</span></button>`;
+        }
+      }
+      b+=`<td class="appcell"><select class="acc" data-role="${esc(cur)}" onchange="setAccess('${esc(email)}',${a.id},this)">${opts}</select>${extra}</td>`;
+    });
+    b+=`<td><button class="rm-btn" title="Retirer cet utilisateur" onclick="removeUser('${esc(email)}')">🗑</button></td></tr>`;
+  });
+  $('matBody').innerHTML=b;
+}
+
+async function setAccess(email,ongletId,sel){
+  const role=sel.value;
+  sel.disabled=true;
+  // On repart propre : on supprime toute ligne existante pour ce couple, puis on insère si un rôle est choisi
+  const del=await sb.from('onglet_access').delete().eq('email',email).eq('onglet_id',ongletId);
+  if(del.error){ toast('⚠ '+del.error.message,'err'); sel.disabled=false; return; }
+  if(role){
+    const ins=await sb.from('onglet_access').insert({email,onglet_id:ongletId,role});
+    if(ins.error){ toast('⚠ '+ins.error.message,'err'); sel.disabled=false; return; }
+  }
+  if(!GRANTS[email]) GRANTS[email]={};
+  if(role) GRANTS[email][ongletId]=role; else delete GRANTS[email][ongletId];
+  sel.setAttribute('data-role',role);
+  sel.disabled=false;
+  const appName=(APPS.find(a=>a.id===ongletId)||{}).onglet||'';
+  toast(role?`✅ ${email.split('@')[0]} → ${appName} : ${role}`:`✅ Accès retiré : ${appName}`,'gold');
+}
+
+function addUser(){
+  const inp=$('newUser'); const email=inp.value.trim().toLowerCase();
+  if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Adresse email invalide','err');
+  if(USERS.includes(email)) return toast('Cet utilisateur est déjà dans la liste','err');
+  USERS.push(email); USERS.sort(); GRANTS[email]=GRANTS[email]||{};
+  inp.value='';
+  render();
+  toast('Utilisateur ajouté — choisis ses accès ci-dessus','gold');
+}
+
+async function removeUser(email){
+  if(!confirm('Retirer tous les accès de '+email+' ?')) return;
+  const del=await sb.from('onglet_access').delete().eq('email',email);
+  if(del.error){ toast('⚠ '+del.error.message,'err'); return; }
+  delete GRANTS[email];
+  USERS=USERS.filter(u=>u!==email);
+  render();
+  toast('Accès retirés pour '+email,'gold');
+}
+
+// ---- Restaurants Passeport (restriction des directeurs) ----
+function ppRestName(rid){ const r=PP_REST.find(x=>String(x.id)===String(rid)); return r?r.name:null; }
+function openModal(html){ $('modal').innerHTML=html; $('overlay').classList.remove('hidden'); }
+function closeModal(){ $('overlay').classList.add('hidden'); }
+async function managePpResto(email){
+  const pp=PP[email]; if(!pp) return;
+  const {data,error}=await sb.from('pp_profile_restaurants').select('restaurant_id').eq('profile_id',pp.id);
+  if(error){ toast('⚠ '+error.message,'err'); return; }
+  const sel=(data||[]).map(x=>String(x.restaurant_id));
+  const boxes=PP_REST.map(r=>`<label class="rchk"><input type="checkbox" class="pp-cb" value="${r.id}" ${sel.includes(String(r.id))?'checked':''}> ${esc(r.name)}</label>`).join('')||'<span style="color:var(--muted);font-size:13px">Aucun restaurant.</span>';
+  openModal(`<h3>🏠 Restaurants — ${esc(email.split('@')[0])}</h3><p class="mhint">Coche les restaurants que ce directeur peut voir dans le Passeport. <b>Aucune case cochée = accès à tous les restaurants.</b></p><div class="rchk-grid" id="ppBoxes">${boxes}</div><div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn" onclick="savePpResto('${esc(email)}')">Enregistrer</button></div>`);
+}
+async function savePpResto(email){
+  const pp=PP[email]; if(!pp) return;
+  const ids=[...document.querySelectorAll('#ppBoxes .pp-cb:checked')].map(c=>c.value);
+  const del=await sb.from('pp_profile_restaurants').delete().eq('profile_id',pp.id);
+  if(del.error){ toast('⚠ '+del.error.message,'err'); return; }
+  if(ids.length){ const ins=await sb.from('pp_profile_restaurants').insert(ids.map(rid=>({profile_id:pp.id,restaurant_id:rid}))); if(ins.error){ toast('⚠ '+ins.error.message,'err'); return; } }
+  PP_ASSIGN[pp.id]=ids;
+  closeModal(); render();
+  toast('✅ Restaurants mis à jour','gold');
+}
+
+// Entrée clavier
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  if(!$('authView').classList.contains('hidden')) doLogin();
+  else if(document.activeElement===$('newUser')) addUser();
+});
+
+// Démarrage
+(async()=>{
+  const {data:{session}}=await sb.auth.getSession();
+  if(session) await afterLogin(); else show('authView');
+})();
+</script>
+</body>
+</html>

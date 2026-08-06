@@ -1,4 +1,16 @@
 /* Styles du lanceur d'applications injecté dans chaque appli (scopés .sc-*). */
+.sc-back{
+  position:fixed; z-index:2147483000; left:16px; bottom:16px;
+  display:inline-flex; align-items:center; gap:7px; text-decoration:none;
+  background:#fff; color:#14160f; border:1px solid rgba(20,22,15,.14);
+  padding:11px 15px; border-radius:30px; font-family:var(--sc-font,system-ui,-apple-system,sans-serif);
+  font-size:13.5px; font-weight:700; box-shadow:0 6px 20px rgba(20,22,15,.20);
+  transition:transform .12s ease, background .12s ease, color .12s ease;
+}
+.sc-back:hover{ background:var(--sc-green,#6cbe2e); color:#fff; transform:translateY(-1px); border-color:transparent; }
+.sc-back svg{ width:16px; height:16px; }
+@media (max-width:400px){ .sc-back .sc-back-t{ display:none; } }
+
 .sc-fab{
   position:fixed; z-index:2147483000; right:16px; bottom:16px;
   width:56px; height:56px; border-radius:50%; border:none; cursor:pointer;

@@ -1,0 +1,32 @@
+{
+  "name": "Pilotage des Heures Salad&Co",
+  "short_name": "Heures",
+  "description": "Pilotage des heures Salad&Co",
+  "start_url": "../heures-saladco.html",
+  "scope": "../",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f100d",
+  "theme_color": "#e0821e",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "../assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
