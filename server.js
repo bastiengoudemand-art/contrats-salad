@@ -153,6 +153,25 @@ const server = http.createServer(async (req, res) => {
     return send(res, 200, { estim: out, meta: { from, to } });
   }
 
+  // Découverte des centres : GET /centers?from=2026-08-01&to=2026-08-31  (ou &employee=2019)
+  // Interroge WorkedAndProjectedDistributionTime sans filtre de centre pour lister les vrais id_center.
+  if (p === '/centers') {
+    const from = u.searchParams.get('from');
+    const to = u.searchParams.get('to');
+    const emp = u.searchParams.get('employee');
+    const r = await ggGet(`/labor/Employee/WorkedAndProjectedDistributionTime?date_from=${enc(from)}&date_to=${enc(to)}${emp ? '&id_employee=' + enc(emp) : ''}`);
+    const rows = Array.isArray(r.data) ? r.data : [];
+    const map = {};
+    for (const c of rows) {
+      const k = c && c.id_center;
+      if (k == null) continue;
+      if (!map[k]) map[k] = { id_center: c.id_center, center: c.center, internal_code: c.internal_code_center, count: 0, hours: 0 };
+      map[k].count++;
+      const h = num(c.time); if (h != null) map[k].hours = Math.round((map[k].hours + h) * 100) / 100;
+    }
+    return send(res, 200, { status: r.status, ok: r.ok, error: r.error || null, total_rows: rows.length, centers: Object.values(map).sort((a, b) => a.id_center - b.id_center) });
+  }
+
   return send(res, 404, { error: 'not found' });
 });
 
