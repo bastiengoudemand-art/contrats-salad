@@ -161,6 +161,7 @@ select.acc[data-role="Consultant"]{border-color:#9cc6e8;background:#eef6fc}
       <div class="adduser">
         <input id="newUser" type="email" placeholder="nouvel.utilisateur@saladandco.fr">
         <button class="btn small" onclick="addUser()">+ Ajouter un utilisateur</button>
+        <button class="btn small" onclick="createAccountModal((($('newUser').value)||'').trim())" title="Créer le compte de connexion + mot de passe provisoire">🔑 Créer un compte</button>
       </div>
       <div class="hint">Astuce : « — » signifie aucun accès (l'application n'apparaît pas dans le portail de la personne). Retirer un utilisateur supprime tous ses accès.</div>
     </div>
@@ -285,7 +286,7 @@ function render(){
       }
       b+=`<td class="appcell"><select class="acc" data-role="${esc(cur)}" onchange="setAccess('${esc(email)}',${a.id},this)">${opts}</select>${extra}</td>`;
     });
-    b+=`<td><button class="rm-btn" title="Retirer cet utilisateur" onclick="removeUser('${esc(email)}')">🗑</button></td></tr>`;
+    b+=`<td style="white-space:nowrap"><button class="rm-btn" title="Réinitialiser le mot de passe" onclick="resetPwd('${esc(email)}')">🔑</button> <button class="rm-btn" title="Retirer cet utilisateur" onclick="removeUser('${esc(email)}')">🗑</button></td></tr>`;
   });
   $('matBody').innerHTML=b;
 }
@@ -349,6 +350,48 @@ async function savePpResto(email){
   PP_ASSIGN[pp.id]=ids;
   closeModal(); render();
   toast('✅ Restaurants mis à jour','gold');
+}
+
+// ---- Comptes & mots de passe (via Edge Function sécurisée) ----
+async function callAdmin(action,payload){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){ toast('Session expirée, reconnecte-toi','err'); return {error:'no-session'}; }
+  let res,j={};
+  try{
+    res=await fetch(SUPA_URL+'/functions/v1/manage-user',{method:'POST',
+      headers:{'Authorization':'Bearer '+session.access_token,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({action},payload))});
+    j=await res.json();
+  }catch(e){ toast('⚠ Réseau : '+e.message,'err'); return {error:'network'}; }
+  if(!res.ok||j.error){ toast('⚠ '+(j.error||('Erreur '+res.status)),'err'); return {error:j.error||res.status}; }
+  return j;
+}
+function genTempPwd(){ const c='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';let s='';const a=new Uint32Array(8);crypto.getRandomValues(a);for(let i=0;i<8;i++)s+=c[a[i]%c.length];return 'Sc-'+s; }
+function pwdResultModal(title,email,password){
+  openModal(`<h3>${esc(title)}</h3><p class="mhint">Communique ce mot de passe provisoire à <b>${esc(email)}</b>. La personne pourra le changer ensuite via « Mot de passe oublié ».</p><div style="display:flex;gap:8px;align-items:center;margin:12px 0"><input id="pwdOut" readonly value="${esc(password)}" style="flex:1;font-size:17px;font-weight:700;letter-spacing:.5px;padding:11px;border:1px solid var(--line);border-radius:9px"><button class="btn" onclick="(function(){var i=document.getElementById('pwdOut');i.select();try{document.execCommand('copy');}catch(e){}toast('Copié','gold');})()">Copier</button></div><div class="modal-actions"><button class="btn" onclick="closeModal()">Fermer</button></div>`);
+}
+function createAccountModal(prefill){
+  const pwd=genTempPwd();
+  openModal(`<h3>🔑 Créer un compte</h3><p class="mhint">Crée le compte de connexion + l'ajoute à la liste blanche. Choisis ensuite ses accès dans le tableau.</p><label style="display:block;font-size:13px;font-weight:600">Adresse e-mail<input id="caEmail" type="email" value="${esc(prefill||'')}" placeholder="prenom.nom@saladandco.fr" style="width:100%;padding:10px;margin-top:4px;border:1px solid var(--line);border-radius:9px"></label><label style="display:block;font-size:13px;font-weight:600;margin-top:10px">Mot de passe provisoire<input id="caPwd" value="${esc(pwd)}" style="width:100%;padding:10px;margin-top:4px;border:1px solid var(--line);border-radius:9px"></label><div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Annuler</button><button class="btn" onclick="doCreateAccount()">Créer le compte</button></div>`);
+}
+async function doCreateAccount(){
+  const email=(($('caEmail').value)||'').trim().toLowerCase();
+  const password=(($('caPwd').value)||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Adresse e-mail invalide','err');
+  if(password.length<8) return toast('Mot de passe : 8 caractères minimum','err');
+  toast('Création…','gold');
+  const r=await callAdmin('create_user',{email,password});
+  if(r.error) return;
+  if(!USERS.includes(email)){ USERS.push(email); USERS.sort(); }
+  GRANTS[email]=GRANTS[email]||{}; ALLOWED.add(email);
+  render();
+  pwdResultModal('✅ Compte créé',email,r.password||password);
+}
+async function resetPwd(email){
+  if(!confirm('Réinitialiser le mot de passe de '+email+' ?')) return;
+  const r=await callAdmin('reset_password',{email});
+  if(r.error) return;
+  pwdResultModal('🔑 Mot de passe réinitialisé',email,r.password);
 }
 
 // Entrée clavier
