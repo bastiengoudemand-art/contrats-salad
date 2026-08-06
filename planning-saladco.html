@@ -9,7 +9,7 @@
     --green:#1f7a4d; --green-d:#155c39; --green-l:#e8f3ec;
     --ink:#1a2b23; --muted:#6b7c74; --line:#e3e9e5; --bg:#f5f7f6; --card:#ffffff;
     --O:#f5c518; --F:#dc2626; --G:#0d9488; --GI:#0891b2; --JRS:#d97706;
-    --R:#f472b6; --CP:#16a34a; --JF:#db2777; --FOR:#4f46e5; --MAL:#b91c1c; --AUT:#64748b;
+    --R:#2563eb; --CP:#16a34a; --JF:#db2777; --FOR:#4f46e5; --MAL:#b91c1c; --AUT:#64748b;
     --shadow:0 1px 3px rgba(20,40,30,.08),0 1px 2px rgba(20,40,30,.06);
   }
   *{box-sizing:border-box}
@@ -528,7 +528,7 @@ const CATS=[
   {key:"R",label:"Repos",color:"var(--R)"},
   {key:"AUT",label:"Autres",color:"var(--AUT)"}
 ];
-const CATCOLOR={O:"#f5c518",F:"#dc2626",G:"#0d9488",JRS:"#d97706",CP:"#16a34a",JF:"#db2777",R:"#f472b6",AUT:"#64748b",FOR:"#4f46e5",MAL:"#b91c1c"};
+const CATCOLOR={O:"#f5c518",F:"#dc2626",G:"#0d9488",JRS:"#d97706",CP:"#16a34a",JF:"#db2777",R:"#2563eb",AUT:"#64748b",FOR:"#4f46e5",MAL:"#b91c1c"};
 function txtOn(hex){ if(!hex||hex[0]!=="#"||hex.length<7) return "#fff";
   const r=parseInt(hex.substr(1,2),16),g=parseInt(hex.substr(3,2),16),b=parseInt(hex.substr(5,2),16);
   return (0.299*r+0.587*g+0.114*b)>150 ? "#1a2b23" : "#fff"; }
