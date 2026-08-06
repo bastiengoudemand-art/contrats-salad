@@ -1,13 +1,13 @@
 {
-  "name": "Accès Salad&Co",
-  "short_name": "Accès",
-  "description": "Gestion des accès collaborateurs Salad&Co",
-  "start_url": "../acces-saladco.html",
+  "name": "Synthèse des Budgets 2026 Salad&Co",
+  "short_name": "Budget",
+  "description": "Synthèse des budgets Salad&Co",
+  "start_url": "../budget-saladco.html",
   "scope": "../",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#f6f7f4",
-  "theme_color": "#6cbe2e",
+  "background_color": "#0f100d",
+  "theme_color": "#6d4aa7",
   "lang": "fr",
   "icons": [
     {

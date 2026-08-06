@@ -1,13 +1,13 @@
 {
-  "name": "Accès Salad&Co",
-  "short_name": "Accès",
-  "description": "Gestion des accès collaborateurs Salad&Co",
-  "start_url": "../acces-saladco.html",
+  "name": "Primes Salad&Co",
+  "short_name": "Primes",
+  "description": "Suivi de la performance et des primes Salad&Co",
+  "start_url": "../primes-saladco.html",
   "scope": "../",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#f6f7f4",
-  "theme_color": "#6cbe2e",
+  "theme_color": "#2e7d32",
   "lang": "fr",
   "icons": [
     {

@@ -155,16 +155,6 @@ html[data-theme="dark"] .st-warning{color:var(--warning)}
 #app{display:none}
 .idbar .who{font-size:13px;color:var(--text-secondary)}
 </style>
-<!-- SALADCO — chrome commun (début) -->
-<link rel="stylesheet" href="assets/css/saladco.css">
-<link rel="manifest" href="assets/manifests/levees.webmanifest">
-<meta name="theme-color" content="#2a78d6">
-<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Levées">
-<script defer src="assets/js/saladco-nav.js" data-app="levees"></script>
-<!-- SALADCO — chrome commun (fin) -->
 </head>
 <body>
 <div class="authwrap" id="loginScreen">
@@ -666,7 +656,7 @@ el('importZipFile').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
   const btn=el('importZipBtn');const old=btn.textContent;btn.textContent='⏳ Import…';btn.disabled=true;
   const norm=s=>String(s==null?'':s).trim();
-  const toISO=v=>{if(v==null||v==='')return null;if(v instanceof Date&&!isNaN(v)){const p=n=>String(n).padStart(2,'0');return v.getFullYear()+'-'+p(v.getMonth()+1)+'-'+p(v.getDate());}let s=String(v).trim();let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);if(m)return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2})$/);if(m)return '20'+m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');return null;};
+  const toISO=v=>{if(!v)return null;if(v instanceof Date)return v.toISOString().slice(0,10);const m=String(v).match(/(\d{2,4})[-\/](\d{1,2})[-\/](\d{1,2})/);if(m){let a=m[1],b=m[2],c=m[3];if(a.length===4)return a+'-'+b.padStart(2,'0')+'-'+c.padStart(2,'0');return c+'-'+b.padStart(2,'0')+'-'+a.padStart(2,'0');}const m2=String(v).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m2)return m2[3]+'-'+m2[2].padStart(2,'0')+'-'+m2[1].padStart(2,'0');return null;};
   const shortSite=s=>norm(s).replace(/SALAD ?& ?CO/i,'').trim().replace(/\b\w/g,c=>c.toUpperCase())||norm(s);
   try{
     const zip=await JSZip.loadAsync(f);
@@ -674,12 +664,12 @@ el('importZipFile').onchange=async e=>{
     const byIdt={};STATE.obs.forEach(o=>{if(o.idt)byIdt[norm(o.idt)]=o;});
     const identToId={};STATE.obs.forEach(o=>{const k=identKey(o.ident);if(k)identToId[k]=o.id;});
     let maxId=STATE.obs.reduce((m,o)=>Math.max(m,o.id||0),0);
-    let added=0,updated=0,skipped=0,errs=0;
+    let added=0,updated=0,skipped=0;
     if(xEntry){
       const buf=await xEntry.async('arraybuffer');
       const wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:true});
       const sh=wb.Sheets['Data']||wb.Sheets[wb.SheetNames[0]];
-      const arr=XLSX.utils.sheet_to_json(sh,{defval:null,raw:true,cellDates:true});
+      const arr=XLSX.utils.sheet_to_json(sh,{defval:null,raw:false});
       for(const r of arr){
         const key=norm(r['ID technique']);if(!key)continue;
         const iso=toISO(r['Date']);const ann=iso?+iso.slice(0,4):null;
@@ -687,14 +677,14 @@ el('importZipFile').onchange=async e=>{
         if(isExcluded(desc)){skipped++;continue;}
         const ex=byIdt[key];
         if(ex){
-          const {error}=await sb.from('reserves').update(desc).eq('id',ex.id);if(error){errs++;if(errs<=3)console.error('MAJ',key,error.message);continue;}
+          const {error}=await sb.from('reserves').update(desc).eq('id',ex.id);if(error)throw error;
           updated++;const ik=identKey(desc.ident);if(ik)identToId[ik]=ex.id;
         }else{
           let statut='À lever',lp='',ll=null;
           if(desc.traitement==='Traitée'){statut='Levée';lp='Import';ll=iso||null;}
           else if(desc.traitement==='Sans suite'){statut='Sans suite';lp='Import';ll=iso||null;}
           const row=Object.assign({id:++maxId,idt:key,statut,leve_par:lp,leve_le:ll,commentaire:''},desc);
-          const {error}=await sb.from('reserves').insert(row);if(error){errs++;if(errs<=3)console.error('INSERT',key,error.message);continue;}
+          const {error}=await sb.from('reserves').insert(row);if(error)throw error;
           added++;byIdt[key]={id:row.id,idt:key};const ik=identKey(desc.ident);if(ik)identToId[ik]=row.id;
         }
       }
@@ -714,14 +704,13 @@ el('importZipFile').onchange=async e=>{
       if(!comp){pnomatch++;continue;}
       const set=existingPhotos[rid]||new Set();
       if(set.has(comp)){pdup++;continue;}
-      const {error}=await sb.from('reserve_photos').insert({reserve_id:rid,data:comp,added_by:DIRECTOR});if(error){errs++;if(errs<=3)console.error('PHOTO',pe.folder,error.message);continue;}
+      const {error}=await sb.from('reserve_photos').insert({reserve_id:rid,data:comp,added_by:DIRECTOR});if(error)throw error;
       set.add(comp);existingPhotos[rid]=set;padded++;matched.add(rid);
     }
     try{await sb.from('journal').insert({directeur:DIRECTOR,site:'—',obs:'Import lot (zip : export + photos)',action:added+' ajoutée(s), '+updated+' MAJ, '+padded+' photo(s) sur '+matched.size+' réserve(s)'});}catch(e){}
     await loadData();
     let msg='Lot importé ✅\n\nExport :\n• '+added+' nouvelle(s) réserve(s)\n• '+updated+' mise(s) à jour';
     if(skipped)msg+='\n• '+skipped+' ignorée(s) (sites exclus)';
-    if(errs)msg+='\n• '+errs+' ligne(s)/photo(s) en erreur, ignorées (voir console)';
     if(!xEntry)msg+='\n• (aucun .xlsx trouvé dans le zip — photos seules)';
     msg+='\n\nPhotos :\n• '+padded+' rattachée(s) à '+matched.size+' réserve(s)';
     if(pdup)msg+='\n• '+pdup+' déjà présente(s)';

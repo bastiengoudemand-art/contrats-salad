@@ -1,13 +1,13 @@
 {
-  "name": "Accès Salad&Co",
-  "short_name": "Accès",
-  "description": "Gestion des accès collaborateurs Salad&Co",
-  "start_url": "../acces-saladco.html",
+  "name": "Passeport Collaborateur Salad&Co",
+  "short_name": "Passeport",
+  "description": "Suivi de formation et passeports collaborateurs Salad&Co",
+  "start_url": "../passeport-saladco.html",
   "scope": "../",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#f6f7f4",
-  "theme_color": "#6cbe2e",
+  "background_color": "#0f100d",
+  "theme_color": "#1b1d1a",
   "lang": "fr",
   "icons": [
     {

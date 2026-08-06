@@ -1,13 +1,13 @@
 {
-  "name": "Accès Salad&Co",
-  "short_name": "Accès",
-  "description": "Gestion des accès collaborateurs Salad&Co",
-  "start_url": "../acces-saladco.html",
+  "name": "Contrats Salad&Co",
+  "short_name": "Contrats",
+  "description": "Dashboard des contrats et échéances Salad&Co",
+  "start_url": "../contrats-saladco.html",
   "scope": "../",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#f6f7f4",
-  "theme_color": "#6cbe2e",
+  "theme_color": "#2a78d6",
   "lang": "fr",
   "icons": [
     {
