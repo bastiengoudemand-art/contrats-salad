@@ -1,0 +1,9 @@
+{
+  "name": "gotogir-proxy",
+  "version": "1.0.0",
+  "description": "Micro-service Node appelant l'API GoToGir/Mapal WAP en Bearer avec une pile TLS tolérante (OpenSSL).",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "node server.js" }
+}
