@@ -2,15 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Planning Manager — Salad &amp; co</title>
-<meta name="theme-color" content="#1f7a4d">
-<link rel="manifest" href="manifest-planning.webmanifest">
-<link rel="apple-touch-icon" href="planning-apple-touch-icon.png">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Planning">
 <style>
   :root{
     --green:#1f7a4d; --green-d:#155c39; --green-l:#e8f3ec;
@@ -23,18 +16,19 @@
   html,body{margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45}
-  header{background:linear-gradient(120deg,var(--green),var(--green-d));color:#fff;padding:14px 20px;
-    display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:var(--shadow);position:sticky;top:0;z-index:20}
-  header h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px;display:flex;align-items:center;gap:9px}
+  header{background:rgba(255,255,255,.85);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--ink);padding:12px 20px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+  header h1{font-size:16px;margin:0;font-weight:750;letter-spacing:.2px;display:flex;align-items:center;gap:9px}
   header h1 .logo{background:#fff;color:var(--green);border-radius:8px;padding:3px 8px;font-weight:800;font-size:13px}
   .spacer{flex:1}
-  .mode-chip{font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.16);
+  .mode-chip{font-size:12px;font-weight:600;padding:6px 11px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--muted);
     display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-  .mode-chip .dot{width:8px;height:8px;border-radius:50%;background:#ffd27a}
-  .mode-chip.edit .dot{background:#7bffb0}
+  .mode-chip .dot{width:8px;height:8px;border-radius:50%;background:#b8c0bb}
+  .mode-chip.edit{color:var(--green-d);border-color:var(--green-line,#cfe6d8);background:var(--green-l)}
+  .mode-chip.edit .dot{background:#34ac5c;box-shadow:0 0 0 3px rgba(52,172,92,.15)}
   button{font-family:inherit;cursor:pointer;border:0;border-radius:9px;font-size:13px;font-weight:600;transition:.15s}
-  .btn-light{background:rgba(255,255,255,.16);color:#fff;padding:8px 13px}
-  .btn-light:hover{background:rgba(255,255,255,.28)}
+  .btn-light{background:#fff;color:var(--ink);border:1px solid var(--line);padding:8px 13px}
+  .btn-light:hover{border-color:var(--green);color:var(--green)}
   .btn{background:var(--green);color:#fff;padding:9px 15px}
   .btn:hover{background:var(--green-d)}
   .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line);padding:8px 13px}
@@ -57,12 +51,12 @@
   th,td{border:1px solid var(--line);padding:0;text-align:center}
   th{background:#f7faf8;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;padding:7px 4px}
   th.day .d{display:block;font-size:15px;color:var(--ink);font-weight:800;letter-spacing:0}
-  th.today{background:var(--green-l);color:var(--green-d)}
+  th.today{background:var(--green-l);color:var(--green-d);border-bottom:2px solid var(--green)}
   td.name{text-align:left;padding:9px 12px;font-weight:600;background:#fbfdfc;white-space:nowrap;position:sticky;left:0;z-index:2}
   td.today-col{background:rgba(31,122,77,.05)}
   .cell{min-height:44px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:2px;padding:6px 4px;font-weight:700;font-size:13px}
-  .cell .code{display:inline-block;padding:2px 8px;border-radius:6px;color:#fff;font-size:12px;min-width:26px}
+  .cell .code{display:inline-block;padding:4px 10px;border-radius:9px;font-size:12.5px;font-weight:700;min-width:28px}
   .cell .note{font-size:10px;color:var(--muted);font-weight:500;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   td.editable{cursor:pointer}
   td.editable:hover{outline:2px solid var(--green);outline-offset:-2px}
@@ -77,7 +71,14 @@
   .recap td.num.z{color:#c4ccc8;font-weight:500}
   .recap tr:hover td{background:#f7faf8}
   .recap tfoot td{background:#f2f6f4;font-weight:800}
-  .pill{display:inline-block;padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700;color:#fff}
+  .pill{display:inline-block;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:700}
+  /* palette de codes harmonisée (fond doux + encre) */
+  .cat-O{background:#fef3c7;color:#8a5a06} .cat-F{background:#fde5e4;color:#9a2320}
+  .cat-G{background:#d3f4ec;color:#0f6a5e} .cat-CP{background:#dcf5e2;color:#1c6b3a}
+  .cat-JRS{background:#ffe8d3;color:#9a4816} .cat-JF{background:#efe6fb;color:#5e3aa0}
+  .cat-R{background:#fbe6f0;color:#9d2b64} .cat-FOR{background:#e3e6fb;color:#3a3f9a}
+  .cat-MAL{background:#fde0df;color:#8a1f1c} .cat-AUT{background:#e8ebe9;color:#495650}
+  .av{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;color:#fff;font-size:10.5px;font-weight:750;vertical-align:middle;margin-right:8px;flex:none;letter-spacing:.2px}
   .muted{color:var(--muted)}
   .empty{padding:40px;text-align:center;color:var(--muted)}
   /* modal */
@@ -151,8 +152,8 @@
   .alerts li.wend{border-left-color:#e11d48;background:#fff1f2;border-color:#fecdd3;color:#9f1239}
   .recap td.wknd{background:#fbfcfb}
   .viewnav{display:flex;gap:6px}
-  .vbtn{background:rgba(255,255,255,.16);color:#fff;padding:8px 14px;border-radius:9px;font-weight:600}
-  .vbtn.on{background:#fff;color:var(--green-d)}
+  .vbtn{background:transparent;color:var(--muted);padding:8px 14px;border-radius:10px;font-weight:600}
+  .vbtn.on{background:var(--green-l);color:var(--green-d)}
   .homegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:14px}
   .rcard{border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;transition:.15s;background:#fff}
   .rcard:hover{border-color:var(--green);box-shadow:var(--shadow);transform:translateY(-1px)}
@@ -162,10 +163,12 @@
   .rcard ul{list-style:none;margin:0;padding:6px 0}
   .rcard li{display:flex;align-items:center;gap:8px;padding:6px 13px}
   .rcard li:not(:last-child){border-bottom:1px solid #f2f5f3}
-  .rcard li .nm{font-weight:600}
+  .rcard li .nm{font-weight:650;font-size:13.5px}
+  .rcard .who{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+  .rcard .rl{font-size:10.5px;color:var(--muted);font-weight:600}
   .rcard li .sp{flex:1}
   .rcard li .off{color:#b9c2bd;font-weight:700;font-size:13px}
-  .rcard li .code{display:inline-block;padding:2px 8px;border-radius:6px;color:#fff;font-size:12px;font-weight:700;min-width:26px;text-align:center}
+  .rcard li .code{display:inline-block;padding:4px 10px;border-radius:9px;font-size:12px;font-weight:700;min-width:28px;text-align:center}
   .rcard li .note{font-size:11px;color:var(--muted);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .rcard .none{padding:12px 13px;color:var(--muted);font-size:12px}
   input[type=date]{padding:8px 10px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px}
@@ -195,7 +198,6 @@
   </nav>
   <div class="spacer"></div>
   <span id="modeChip" class="mode-chip"><span class="dot"></span><span id="modeTxt">Consultation</span></span>
-  <button id="installBtn" class="btn-light" style="display:none">📲 Installer</button>
   <button id="shareBtn" class="btn-light">🔗 Lien collaborateurs</button>
   <button id="unlockBtn" class="btn-light">🔒 Espace direction</button>
 </header>
@@ -279,19 +281,6 @@
       <button class="btn-ghost" onclick="closeModal('ovUnlock')">Annuler</button>
       <button class="btn" id="uGo">Déverrouiller</button>
     </div>
-  </div>
-</div>
-
-<!-- Install (iOS) modal -->
-<div class="ov" id="ovInstall">
-  <div class="modal">
-    <h3>📲 Installer sur iPhone / iPad</h3>
-    <div class="mb" style="display:flex;flex-direction:column;gap:12px;font-size:13.5px">
-      <div>1️⃣ Touchez le bouton <b>Partager</b> <span style="display:inline-block;border:1px solid var(--line);border-radius:6px;padding:1px 7px">⬆️</span> en bas de Safari</div>
-      <div>2️⃣ Faites défiler et choisissez <b>« Sur l'écran d'accueil »</b></div>
-      <div>3️⃣ Touchez <b>Ajouter</b> — l'icône <b>Planning</b> apparaît comme une app</div>
-    </div>
-    <div class="mf"><button class="btn" onclick="closeModal('ovInstall')">Compris</button></div>
   </div>
 </div>
 
@@ -564,6 +553,12 @@ function isWork(code){ const c=classify(code); if(c.cat==="O"||c.cat==="F"||c.ca
   const n=(code||"").toUpperCase(); return n.includes("FOR")||n.includes("INV"); }
 function isWeekendRest(code){ const c=classify(code); return c.cat==="R"||c.cat==="CP"||c.cat==="JRS"; }
 function dDiff(a,b){ return Math.round((new Date(b+"T00:00:00Z")-new Date(a+"T00:00:00Z"))/864e5); }
+// ---- visuel : jeton de catégorie + avatars ----
+function catTok(code){ const c=classify(code); return c.sub||c.cat||"AUT"; }
+function initials(name){ const p=(name||"").trim().split(/\s+/); const a=(p[0]||"")[0]||""; const b=(p.length>1?p[p.length-1][0]:"")||""; return (a+b).toUpperCase()||"?"; }
+const AVC=["#3f7d5b","#c6803a","#5b6bb0","#8a5aa0","#0f6a5e","#9a4816","#5f7a3f","#7a5f9a"];
+function avColor(name){ let h=0; const s=name||""; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return AVC[h%AVC.length]; }
+function avatar(name){ return '<span class="av" style="background:'+avColor(name)+'">'+esc(initials(name))+'</span>'; }
 
 // ---- date helpers ----
 function iso(d){ return d.toISOString().slice(0,10); }
@@ -677,14 +672,14 @@ async function renderHome(){
     }
     const emps=allEmp[r.id]||[]; let working=0, items="";
     emps.forEach(e=>{ const sh=map[e.id];
-      const role=e.role?'<span class="role">'+esc(e.role)+'</span>':'';
+      const who='<span class="who"><span class="nm">'+esc(e.name)+'</span>'+(e.role?'<span class="rl">'+esc(e.role)+'</span>':'')+'</span>';
       if(sh&&sh.code){ const c=classify(sh.code);
         if(["O","F","G","JRS"].includes(c.cat)) working++;
-        items+='<li><span class="nm">'+esc(e.name)+role+'</span><span class="sp"></span>'+
+        items+='<li>'+avatar(e.name)+who+'<span class="sp"></span>'+
           (sh.note?'<span class="note">'+esc(sh.note)+'</span>':'')+
-          '<span class="code" style="background:'+(c.color||"#64748b")+';color:'+txtOn(c.color||"#64748b")+'">'+esc(sh.code)+'</span></li>';
+          '<span class="code cat-'+catTok(sh.code)+'">'+esc(sh.code)+'</span></li>';
       } else {
-        items+='<li><span class="nm">'+esc(e.name)+role+'</span><span class="sp"></span><span class="off">—</span></li>';
+        items+='<li>'+avatar(e.name)+who+'<span class="sp"></span><span class="off">—</span></li>';
       }
     });
     if(!emps.length) items='<div class="none">Aucun collaborateur</div>';
@@ -756,7 +751,7 @@ function renderGrid(){
     const rm = canEdit? '<button class="rm" data-rm="'+e.id+'" title="Retirer '+esc(e.name)+'">×</button>' : '';
     const role = e.role? '<span class="role'+(canEdit?' clk':'')+'" data-role="'+e.id+'">'+esc(e.role)+'</span>'
                : (canEdit? '<span class="role clk add" data-role="'+e.id+'">+ rôle</span>' : '');
-    h+='<tr><td class="name">'+rm+esc(e.name)+role+'</td>';
+    h+='<tr><td class="name">'+rm+avatar(e.name)+esc(e.name)+role+'</td>';
     for(let i=0;i<7;i++){ const d=addDays(mon,i); const di=iso(d); const key=e.id+"|"+di;
       const sh=cur.shifts[key]; const isT=di===realToday; const m=dayMeta(di,zone);
       const cls=(canEdit?"editable ":"")+(isT?"today-col":(m.hol?"hol-col":(m.vac?"vac-col":"")));
@@ -795,8 +790,7 @@ async function removeEmp(id){
 }
 function cellHTML(sh){
   if(!sh||!sh.code) return '<div class="cell"></div>';
-  const c=classify(sh.code); const col=c.color||"#64748b";
-  let inner='<span class="code" style="background:'+col+';color:'+txtOn(col)+'">'+esc(sh.code)+'</span>';
+  let inner='<span class="code cat-'+catTok(sh.code)+'">'+esc(sh.code)+'</span>';
   if(sh.note) inner+='<span class="note">'+esc(sh.note)+'</span>';
   return '<div class="cell">'+inner+'</div>';
 }
@@ -863,14 +857,14 @@ function renderMonth(){
   cur.employees.forEach(e=>{
     const rm=canEdit?'<button class="rm" data-rm="'+e.id+'" title="Retirer">×</button>':'';
     const role=e.role?'<span class="role'+(canEdit?' clk':'')+'" data-role="'+e.id+'">'+esc(e.role)+'</span>':(canEdit?'<span class="role clk add" data-role="'+e.id+'">+ rôle</span>':'');
-    h+='<tr><td class="name">'+rm+esc(e.name)+role+'</td>';
+    h+='<tr><td class="name">'+rm+avatar(e.name)+esc(e.name)+role+'</td>';
     for(let d=1;d<=nb;d++){ const dt=new Date(Date.UTC(y,mo,d)); const di=iso(dt); const key=e.id+"|"+di;
       const sh=cur.shifts[key]; const wd=(dt.getUTCDay()+6)%7; const we=wd>=5; const m=dayMeta(di,zone);
       const lockd=IS_COLLAB && !weekPublishedFor(di);
       const cls=(canEdit?"editable ":"")+(lockd?"locked ":"")+(di===realToday?"today-col":(m.hol?"hol-col":(m.vac?"vac-col":(we?"we-col":""))));
       let inner='';
-      if(!lockd && sh&&sh.code){ const c=classify(sh.code); const col=c.color||"#64748b";
-        inner='<span class="mcode" style="background:'+col+';color:'+txtOn(col)+'" title="'+esc(sh.code)+(sh.note?' — '+esc(sh.note):'')+'">'+esc(sh.code)+'</span>'; }
+      if(!lockd && sh&&sh.code){
+        inner='<span class="mcode cat-'+catTok(sh.code)+'" title="'+esc(sh.code)+(sh.note?' — '+esc(sh.note):'')+'">'+esc(sh.code)+'</span>'; }
       h+='<td class="mcell '+cls+'" data-emp="'+e.id+'" data-date="'+di+'">'+inner+'</td>';
     }
     h+='</tr>';
@@ -918,7 +912,7 @@ function renderRecap(){
     }
   });
   let h='<table><thead><tr><th style="text-align:left;padding-left:12px">Collaborateur</th>';
-  cols.forEach(c=>h+='<th title="'+c.label+'"><span class="pill" style="background:'+CATCOLOR[c.key]+';color:'+txtOn(CATCOLOR[c.key])+'">'+c.key+'</span></th>');
+  cols.forEach(c=>h+='<th title="'+c.label+'"><span class="pill cat-'+c.key+'">'+c.key+'</span></th>');
   h+='<th title="Week-ends complets en repos (samedi ET dimanche en R/CP/JRS la même semaine)">W-E<br><span class="muted" style="font-weight:600;font-size:10px">repos</span></th>';
   h+='<th>Total jours</th></tr></thead><tbody>';
   const grand={}; cols.forEach(c=>grand[c.key]=0); let gTot=0;
@@ -1089,29 +1083,6 @@ document.getElementById("todayD").onclick=()=>{ document.getElementById("homeDat
 let toastT;
 function toast(msg,err){ const t=document.getElementById("toast"); t.textContent=msg; t.className="toast show"+(err?" err":"");
   clearTimeout(toastT); toastT=setTimeout(()=>t.className="toast",2200); }
-
-/* ===================== PWA — Installation sur l'écran d'accueil ===================== */
-if('serviceWorker' in navigator && location.protocol==='https:'){
-  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
-}
-let pwaPrompt=null;
-function pwaStandalone(){ try{ return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }catch(e){ return false; } }
-function pwaIsIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); }
-function updateInstallBtn(){
-  const b=document.getElementById('installBtn'); if(!b)return;
-  b.style.display=(!pwaStandalone()&&(pwaPrompt||pwaIsIOS()))?'':'none';
-}
-document.getElementById('installBtn').onclick=async()=>{
-  if(pwaPrompt){
-    const p=pwaPrompt; pwaPrompt=null;
-    try{ p.prompt(); const ch=await p.userChoice; if(ch&&ch.outcome==='accepted'){ toast('📲 Application installée !'); } else { pwaPrompt=p; } }catch(e){ pwaPrompt=p; }
-    updateInstallBtn(); return;
-  }
-  openModal('ovInstall');
-};
-window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); pwaPrompt=e; updateInstallBtn(); });
-window.addEventListener('appinstalled',()=>{ pwaPrompt=null; toast('📲 Planning installé sur votre écran d’accueil'); updateInstallBtn(); });
-updateInstallBtn();
 </script>
 </body>
 </html>
