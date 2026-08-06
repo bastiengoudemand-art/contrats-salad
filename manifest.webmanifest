@@ -5,7 +5,7 @@
   "start_url": "./passeport-saladco.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#1b1d1a",
   "theme_color": "#1b1d1a",
   "lang": "fr",
