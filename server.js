@@ -65,6 +65,25 @@ function sumTime(rows) {
   return { raw: f ? Math.round(t * 100) / 100 : null, count: rows.length };
 }
 
+// Catégorie par salarié (EM = polyvalent de restauration / Encadrement = cadre + agent de maîtrise).
+// Récupérée via AllHiredEmployees et mise en cache 1 h.
+let EMP_CACHE = { ts: 0, map: null };
+async function getEmployeeMap() {
+  const now = Date.now();
+  if (EMP_CACHE.map && (now - EMP_CACHE.ts) < 3600000) return EMP_CACHE.map;
+  const r = await ggGet('/labor/Employee/AllHiredEmployees');
+  const map = {};
+  if (Array.isArray(r.data)) {
+    for (const e of r.data) {
+      const txt = ((e.job || '') + ' ' + (e.category_group || '')).toLowerCase();
+      map[e.employee_id] = { isEM: /polyvalent/.test(txt), job: e.job, cat: e.category_group };
+    }
+  }
+  EMP_CACHE = { ts: now, map };
+  return map;
+}
+const rnd2 = (x) => Math.round(x * 100) / 100;
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-access-key, content-type, apikey',
@@ -138,17 +157,27 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // Réel + prévisionnel (planning) : GET /estim?units=9,1,17&from=2026-08-01&to=2026-08-31
-  // L'API renvoie le réel pour les jours passés et le projeté (planning) pour les jours à venir.
+  // Réel + prévisionnel (planning), avec répartition EM / Encadrement :
+  // GET /estim?units=9,1,17&from=2026-08-01&to=2026-08-31
   if (p === '/estim') {
     const units = (u.searchParams.get('units') || '').split(',').map((s) => s.trim()).filter(Boolean);
     const from = u.searchParams.get('from');
     const to = u.searchParams.get('to');
     if (!units.length || !from || !to) return send(res, 400, { error: 'params requis: units, from, to' });
+    const empMap = await getEmployeeMap();
     const out = {};
     await Promise.all(units.map(async (unit) => {
       const r = await ggGet(`/labor/Employee/WorkedAndProjectedDistributionTime?date_from=${enc(from)}&date_to=${enc(to)}&id_center=${enc(unit)}`);
-      out[unit] = r.ok ? sumTime(r.data) : { raw: null, count: 0, error: r.error || ('status ' + r.status) };
+      if (!r.ok) { out[unit] = { raw: null, em: null, encad: null, count: 0, error: r.error || ('status ' + r.status) }; return; }
+      const rows = Array.isArray(r.data) ? r.data : [];
+      let tot = 0, em = 0, encad = 0, unmatched = 0, f = false;
+      for (const c of rows) {
+        const h = num(c && c.time); if (h == null) continue;
+        tot += h; f = true;
+        const info = empMap[c && c.id_employee];
+        if (info && info.isEM) em += h; else { encad += h; if (!info) unmatched++; }
+      }
+      out[unit] = { raw: f ? rnd2(tot) : null, em: rnd2(em), encad: rnd2(encad), count: rows.length, unmatched };
     }));
     return send(res, 200, { estim: out, meta: { from, to } });
   }
@@ -170,6 +199,15 @@ const server = http.createServer(async (req, res) => {
       const h = num(c.time); if (h != null) map[k].hours = Math.round((map[k].hours + h) * 100) / 100;
     }
     return send(res, 200, { status: r.status, ok: r.ok, error: r.error || null, total_rows: rows.length, centers: Object.values(map).sort((a, b) => a.id_center - b.id_center) });
+  }
+
+  // Diag catégories : GET /employees  → distribution job / category_group (pour valider la règle EM/Encad)
+  if (p === '/employees') {
+    const map = await getEmployeeMap();
+    const ids = Object.keys(map);
+    const dist = {};
+    for (const id of ids) { const e = map[id]; const k = (e.cat || '') + ' | ' + (e.job || '') + ' | EM=' + e.isEM; dist[k] = (dist[k] || 0) + 1; }
+    return send(res, 200, { total: ids.length, distribution: Object.entries(dist).map(([k, v]) => ({ k, v })).sort((a, b) => b.v - a.v) });
   }
 
   return send(res, 404, { error: 'not found' });
