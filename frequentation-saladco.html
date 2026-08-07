@@ -14,7 +14,7 @@
   .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 60px}
   h1{font-size:22px;margin:0 0 2px} .sub{color:var(--mute);font-size:13px;margin-bottom:18px}
   .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
-  input,button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px}
+  input,select,button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px}
   button{cursor:pointer} button:hover{border-color:var(--accent)}
   button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
   .badge{font-size:12px;padding:4px 10px;border-radius:20px;border:1px solid var(--line);color:var(--mute);background:var(--card)}
@@ -35,28 +35,29 @@
   .empty{padding:26px;text-align:center;color:var(--mute)}
   .foot{margin-top:18px;color:var(--mute);font-size:12px}
   .muted{color:var(--mute)}
+  .who{font-size:12px;color:var(--mute)} .who a{color:var(--n1);cursor:pointer;text-decoration:underline}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Fréquentation <span class="badge">Pilotage des Heures</span></h1>
-  <div class="sub">Qui a ouvert l'outil, combien de fois, et quand. Données enregistrées à chaque ouverture (nom saisi par l'utilisateur).</div>
+  <div class="sub">Qui a ouvert l'outil, combien de fois, et quand. Indiquez votre prénom et votre restaurant pour consulter.</div>
 
-  <div class="bar">
-    <input id="code" type="password" placeholder="Code admin" autocomplete="off" style="min-width:220px"/>
-    <button id="go" class="primary">Charger les statistiques</button>
-    <label class="muted" style="font-size:12px"><input type="checkbox" id="remember" style="width:auto;padding:0;margin-right:4px;vertical-align:middle"/>Retenir sur cet appareil</label>
-    <span id="badge" class="badge">En attente du code…</span>
+  <div class="bar" id="idBar">
+    <input id="prenom" placeholder="Votre prénom" autocomplete="off" style="min-width:160px"/>
+    <select id="resto"><option value="" disabled selected>— Votre restaurant —</option></select>
+    <button id="go" class="primary">Consulter</button>
+    <span id="badge" class="badge">Identifiez-vous pour afficher</span>
   </div>
 
-  <div id="content"><div class="empty">Saisissez le code admin pour afficher la fréquentation.</div></div>
+  <div id="content"><div class="empty">Indiquez votre prénom et votre restaurant, puis cliquez « Consulter ».</div></div>
   <div class="foot" id="foot"></div>
 </div>
 
 <script>
-const EDGE="https://wplolvjziqqvvcydvfxs.supabase.co/functions/v1/heures-api";
-const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbG9sdmp6aXFxdnZjeWR2ZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTAwNzYsImV4cCI6MjEwMDEyNjA3Nn0.DD2sqXCHcVyETPxb78QiBzH21r73y2CAY5LdXCH5k9w";
-const CODEKEY="heures_admin_code";
+const VISITS="https://wplolvjziqqvvcydvfxs.supabase.co/functions/v1/visits-public?action=visits";
+const RESTOS_LIST=['ADEO RONCHIN','BTWIN','CAEN','CAMPUS','HERON','KIABI LEZENNES','LE PONTET','LILLE','MERIGNAC','NOYELLES','TOULON','VILLENAVE','Direction / Siège'];
+const PKEY='freq_prenom', RKEY='freq_resto';
 const $=s=>document.querySelector(s);
 const nf=new Intl.NumberFormat('fr-FR');
 const pad=n=>String(n).padStart(2,'0');
@@ -66,39 +67,44 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','
 function setBadge(cls,txt){ const b=$('#badge'); b.className='badge '+(cls||''); b.textContent=txt; }
 
 function boot(){
-  let saved=null; try{ saved=localStorage.getItem(CODEKEY); }catch(e){}
-  if(saved){ $('#code').value=saved; $('#remember').checked=true; }
+  $('#resto').innerHTML='<option value="" disabled selected>— Votre restaurant —</option>'+RESTOS_LIST.map(r=>`<option value="${r}">${r}</option>`).join('');
+  let p=null,r=null; try{ p=localStorage.getItem(PKEY); r=localStorage.getItem(RKEY); }catch(e){}
+  if(p) $('#prenom').value=p;
+  if(r) $('#resto').value=r;
   $('#go').onclick=load;
-  $('#code').addEventListener('keydown',e=>{ if(e.key==='Enter') load(); });
-  if(saved) load();
+  $('#prenom').addEventListener('keydown',e=>{ if(e.key==='Enter') load(); });
+  if(p && r) load();
 }
 
 async function load(){
-  const code=($('#code').value||'').trim();
-  if(!code){ setBadge('warn','Entrez le code admin'); return; }
-  try{ if($('#remember').checked) localStorage.setItem(CODEKEY,code); else localStorage.removeItem(CODEKEY); }catch(e){}
+  const prenom=($('#prenom').value||'').trim();
+  const resto=$('#resto').value||'';
+  if(!prenom){ setBadge('warn','Entrez votre prénom'); $('#prenom').focus(); return; }
+  if(!resto){ setBadge('warn','Choisissez votre restaurant'); $('#resto').focus(); return; }
+  try{ localStorage.setItem(PKEY,prenom); localStorage.setItem(RKEY,resto); }catch(e){}
   setBadge('','Chargement…');
   $('#content').innerHTML='<div class="empty">Chargement…</div>';
   try{
-    const r=await fetch(`${EDGE}?action=stats&key=${encodeURIComponent(code)}`,{headers:{apikey:ANON,Authorization:`Bearer ${ANON}`}});
+    const r=await fetch(VISITS);
     const data=await r.json();
     if(data.error){ setBadge('warn',data.error); $('#content').innerHTML=`<div class="empty">${esc(data.error)}</div>`; return; }
-    render(data.visits||[]);
+    render(data.visits||[], prenom, resto);
   }catch(e){
     setBadge('warn','Erreur de chargement');
     $('#content').innerHTML=`<div class="empty">Erreur : ${esc(e.message)}</div>`;
   }
 }
 
-function render(visits){
-  const rows=visits.map(v=>({ name:(v.name||'?').trim()||'?', device:v.device||'', ip:v.ip||'', ts:new Date(v.ts) }))
+function render(visits, prenom, resto){
+  const rows=visits.map(v=>({ name:(v.name||'?').trim()||'?', device:v.device||'', ts:new Date(v.ts) }))
                     .filter(v=>!isNaN(v.ts));
   rows.sort((a,b)=>b.ts-a.ts);
   const total=rows.length;
-  if(!total){ setBadge('ok','0 connexion'); $('#content').innerHTML='<div class="empty">Aucune connexion enregistrée pour l’instant.</div>'; return; }
+  const who = `Connecté : <b>${esc(prenom)} — ${esc(resto)}</b> · <a id="chg">changer</a>`;
+  if(!total){ setBadge('ok','0 connexion'); $('#content').innerHTML='<div class="empty">Aucune connexion enregistrée pour l’instant.</div>'; wireWho(); $('#foot').innerHTML=who; return; }
 
   const now=new Date();
-  const d7=new Date(now.getTime()-7*864e5), d30=new Date(now.getTime()-30*864e5);
+  const d7=new Date(now.getTime()-7*864e5);
   const last7=rows.filter(v=>v.ts>=d7).length;
   const byName={};
   rows.forEach(v=>{ const k=v.name; (byName[k]||(byName[k]={n:0,first:v.ts,last:v.ts,devs:new Set()})); const o=byName[k]; o.n++; if(v.ts<o.first)o.first=v.ts; if(v.ts>o.last)o.last=v.ts; if(v.device)o.devs.add(v.device); });
@@ -106,7 +112,6 @@ function render(visits){
   const uniques=people.length;
   const lastVisit=rows[0].ts;
 
-  // Connexions par jour sur 30 jours
   const days=[]; const dayMap={};
   for(let i=29;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i); const key=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; days.push({key,d,c:0}); dayMap[key]=days[days.length-1]; }
   rows.forEach(v=>{ const key=`${v.ts.getFullYear()}-${pad(v.ts.getMonth()+1)}-${pad(v.ts.getDate())}`; if(dayMap[key]) dayMap[key].c++; });
@@ -119,7 +124,6 @@ function render(visits){
     <div class="kpi"><div class="v" style="font-size:18px">${fmtDateTime(lastVisit)}</div><div class="l">Dernière connexion</div></div>
   </div>`;
 
-  // Bar chart SVG
   const W=960,H=180,padL=28,padB=22,padT=10,plotW=W-padL-8,plotH=H-padB-padT;
   const bw=plotW/days.length;
   const bars=days.map((d,i)=>{ const h=d.c/maxc*plotH; const x=padL+i*bw; const y=padT+plotH-h;
@@ -147,7 +151,12 @@ function render(visits){
     + `<h2>25 dernières connexions</h2><table><thead><tr><th>Nom</th><th>Date &amp; heure</th></tr></thead><tbody>${recent}</tbody></table>`;
 
   setBadge('ok',`${nf.format(total)} connexions · ${uniques} visiteurs`);
-  $('#foot').innerHTML='Horodatage en heure locale de votre navigateur. Un « visiteur » = un nom saisi ; « appareils » = nombre de navigateurs/postes distincts pour ce nom.';
+  $('#foot').innerHTML = who + ' · Horodatage en heure locale. Un « visiteur » = un nom saisi ; « appareils » = navigateurs/postes distincts pour ce nom.';
+  wireWho();
+}
+
+function wireWho(){
+  const a=$('#chg'); if(a) a.onclick=()=>{ try{ localStorage.removeItem(PKEY); localStorage.removeItem(RKEY); }catch(e){} $('#prenom').value=''; $('#resto').value=''; $('#content').innerHTML='<div class="empty">Indiquez votre prénom et votre restaurant, puis cliquez « Consulter ».</div>'; $('#foot').innerHTML=''; setBadge('','Identifiez-vous pour afficher'); $('#prenom').focus(); };
 }
 
 boot();
