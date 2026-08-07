@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fréquentation — Pilotage des Heures</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --line:#e2e6ec; --txt:#1e2430; --mute:#6b7480;
+    --accent:#c79a2b; --n1:#2f6fb0; --reel:#1f8a4c; --bar:#2f6fb0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 20px 60px}
+  h1{font-size:22px;margin:0 0 2px} .sub{color:var(--mute);font-size:13px;margin-bottom:18px}
+  .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+  input,button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px}
+  button{cursor:pointer} button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .badge{font-size:12px;padding:4px 10px;border-radius:20px;border:1px solid var(--line);color:var(--mute);background:var(--card)}
+  .badge.ok{color:var(--reel);border-color:#bfe0cc;background:#eef8f1}
+  .badge.warn{color:#9a7d1e;border-color:#ecdca6;background:#fbf6e6}
+  .kpis{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 20px}
+  .kpi{flex:1;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .kpi .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+  .kpi .l{color:var(--mute);font-size:12px;margin-top:2px}
+  h2{font-size:15px;margin:22px 0 8px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:13px}
+  th{color:var(--mute);font-weight:600;font-size:12px;background:#fafbfc}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:hover td{background:#f7f9fb} tr:last-child td{border-bottom:0}
+  .chart{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .chart svg{display:block;width:100%;height:auto}
+  .empty{padding:26px;text-align:center;color:var(--mute)}
+  .foot{margin-top:18px;color:var(--mute);font-size:12px}
+  .muted{color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fréquentation <span class="badge">Pilotage des Heures</span></h1>
+  <div class="sub">Qui a ouvert l'outil, combien de fois, et quand. Données enregistrées à chaque ouverture (nom saisi par l'utilisateur).</div>
+
+  <div class="bar">
+    <input id="code" type="password" placeholder="Code admin" autocomplete="off" style="min-width:220px"/>
+    <button id="go" class="primary">Charger les statistiques</button>
+    <label class="muted" style="font-size:12px"><input type="checkbox" id="remember" style="width:auto;padding:0;margin-right:4px;vertical-align:middle"/>Retenir sur cet appareil</label>
+    <span id="badge" class="badge">En attente du code…</span>
+  </div>
+
+  <div id="content"><div class="empty">Saisissez le code admin pour afficher la fréquentation.</div></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const EDGE="https://wplolvjziqqvvcydvfxs.supabase.co/functions/v1/heures-api";
+const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbG9sdmp6aXFxdnZjeWR2ZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTAwNzYsImV4cCI6MjEwMDEyNjA3Nn0.DD2sqXCHcVyETPxb78QiBzH21r73y2CAY5LdXCH5k9w";
+const CODEKEY="heures_admin_code";
+const $=s=>document.querySelector(s);
+const nf=new Intl.NumberFormat('fr-FR');
+const pad=n=>String(n).padStart(2,'0');
+function fmtDate(d){ return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`; }
+function fmtDateTime(d){ return `${fmtDate(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function setBadge(cls,txt){ const b=$('#badge'); b.className='badge '+(cls||''); b.textContent=txt; }
+
+function boot(){
+  let saved=null; try{ saved=localStorage.getItem(CODEKEY); }catch(e){}
+  if(saved){ $('#code').value=saved; $('#remember').checked=true; }
+  $('#go').onclick=load;
+  $('#code').addEventListener('keydown',e=>{ if(e.key==='Enter') load(); });
+  if(saved) load();
+}
+
+async function load(){
+  const code=($('#code').value||'').trim();
+  if(!code){ setBadge('warn','Entrez le code admin'); return; }
+  try{ if($('#remember').checked) localStorage.setItem(CODEKEY,code); else localStorage.removeItem(CODEKEY); }catch(e){}
+  setBadge('','Chargement…');
+  $('#content').innerHTML='<div class="empty">Chargement…</div>';
+  try{
+    const r=await fetch(`${EDGE}?action=stats&key=${encodeURIComponent(code)}`,{headers:{apikey:ANON,Authorization:`Bearer ${ANON}`}});
+    const data=await r.json();
+    if(data.error){ setBadge('warn',data.error); $('#content').innerHTML=`<div class="empty">${esc(data.error)}</div>`; return; }
+    render(data.visits||[]);
+  }catch(e){
+    setBadge('warn','Erreur de chargement');
+    $('#content').innerHTML=`<div class="empty">Erreur : ${esc(e.message)}</div>`;
+  }
+}
+
+function render(visits){
+  const rows=visits.map(v=>({ name:(v.name||'?').trim()||'?', device:v.device||'', ip:v.ip||'', ts:new Date(v.ts) }))
+                    .filter(v=>!isNaN(v.ts));
+  rows.sort((a,b)=>b.ts-a.ts);
+  const total=rows.length;
+  if(!total){ setBadge('ok','0 connexion'); $('#content').innerHTML='<div class="empty">Aucune connexion enregistrée pour l’instant.</div>'; return; }
+
+  const now=new Date();
+  const d7=new Date(now.getTime()-7*864e5), d30=new Date(now.getTime()-30*864e5);
+  const last7=rows.filter(v=>v.ts>=d7).length;
+  const byName={};
+  rows.forEach(v=>{ const k=v.name; (byName[k]||(byName[k]={n:0,first:v.ts,last:v.ts,devs:new Set()})); const o=byName[k]; o.n++; if(v.ts<o.first)o.first=v.ts; if(v.ts>o.last)o.last=v.ts; if(v.device)o.devs.add(v.device); });
+  const people=Object.entries(byName).map(([name,o])=>({name,...o})).sort((a,b)=>b.n-a.n);
+  const uniques=people.length;
+  const lastVisit=rows[0].ts;
+
+  // Connexions par jour sur 30 jours
+  const days=[]; const dayMap={};
+  for(let i=29;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i); const key=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; days.push({key,d,c:0}); dayMap[key]=days[days.length-1]; }
+  rows.forEach(v=>{ const key=`${v.ts.getFullYear()}-${pad(v.ts.getMonth()+1)}-${pad(v.ts.getDate())}`; if(dayMap[key]) dayMap[key].c++; });
+  const maxc=Math.max(1,...days.map(d=>d.c));
+
+  const kpis=`<div class="kpis">
+    <div class="kpi"><div class="v">${nf.format(total)}</div><div class="l">Connexions totales</div></div>
+    <div class="kpi"><div class="v">${nf.format(uniques)}</div><div class="l">Visiteurs distincts</div></div>
+    <div class="kpi"><div class="v">${nf.format(last7)}</div><div class="l">Connexions (7 derniers jours)</div></div>
+    <div class="kpi"><div class="v" style="font-size:18px">${fmtDateTime(lastVisit)}</div><div class="l">Dernière connexion</div></div>
+  </div>`;
+
+  // Bar chart SVG
+  const W=960,H=180,padL=28,padB=22,padT=10,plotW=W-padL-8,plotH=H-padB-padT;
+  const bw=plotW/days.length;
+  const bars=days.map((d,i)=>{ const h=d.c/maxc*plotH; const x=padL+i*bw; const y=padT+plotH-h;
+    return `<rect x="${(x+1).toFixed(1)}" y="${y.toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5" fill="var(--bar)"><title>${fmtDate(d.d)} : ${d.c}</title></rect>`; }).join('');
+  const ticks=days.map((d,i)=> (i%5===0)?`<text x="${(padL+i*bw+bw/2).toFixed(1)}" y="${H-6}" font-size="10" fill="var(--mute)" text-anchor="middle">${pad(d.d.getDate())}/${pad(d.d.getMonth()+1)}</text>`:'').join('');
+  const yTop=`<text x="0" y="${padT+8}" font-size="10" fill="var(--mute)">${maxc}</text>`;
+  const chart=`<div class="chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${yTop}${bars}${ticks}</svg></div>`;
+
+  const peopleRows=people.map(p=>`<tr>
+    <td>${esc(p.name)}</td>
+    <td class="num">${nf.format(p.n)}</td>
+    <td class="num">${p.devs.size}</td>
+    <td>${fmtDate(p.first)}</td>
+    <td>${fmtDateTime(p.last)}</td>
+  </tr>`).join('');
+
+  const recent=rows.slice(0,25).map(v=>`<tr>
+    <td>${esc(v.name)}</td>
+    <td>${fmtDateTime(v.ts)}</td>
+  </tr>`).join('');
+
+  $('#content').innerHTML = kpis
+    + `<h2>Connexions par jour (30 derniers jours)</h2>${chart}`
+    + `<h2>Par personne</h2><table><thead><tr><th>Nom</th><th class="num">Connexions</th><th class="num">Appareils</th><th>1ʳᵉ visite</th><th>Dernière visite</th></tr></thead><tbody>${peopleRows}</tbody></table>`
+    + `<h2>25 dernières connexions</h2><table><thead><tr><th>Nom</th><th>Date &amp; heure</th></tr></thead><tbody>${recent}</tbody></table>`;
+
+  setBadge('ok',`${nf.format(total)} connexions · ${uniques} visiteurs`);
+  $('#foot').innerHTML='Horodatage en heure locale de votre navigateur. Un « visiteur » = un nom saisi ; « appareils » = nombre de navigateurs/postes distincts pour ce nom.';
+}
+
+boot();
+</script>
+</body>
+</html>
