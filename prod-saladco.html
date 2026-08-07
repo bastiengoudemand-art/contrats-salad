@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suivi Prod — Heures CREW — Salad&Co</title>
+<style>
+  :root{
+    --bg:#eef2f6; --panel:#ffffff; --panel2:#f4f7fa; --line:#e3e9f0; --line2:#eef2f6;
+    --ink:#1f2d3a; --muted:#64748b; --faint:#94a3b8;
+    --green:#2e9e5b; --green-d:#237a46; --blue:#2f6fb0;
+    --good:#1f9d57; --bad:#d0402f; --warn:#c48213;
+    --good-bg:#e7f6ee; --bad-bg:#fbe9e7; --warn-bg:#fbf1de;
+    --radius:16px; --shadow:0 6px 22px rgba(31,45,58,.07); --shadow2:0 2px 8px rgba(31,45,58,.05);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums}
+  .num,td,th{font-variant-numeric:tabular-nums}
+  header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;box-shadow:var(--shadow2)}
+  .brandbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;max-width:1460px;margin:0 auto;padding:14px 24px}
+  .logo{display:flex;align-items:center;gap:12px}
+  .logo .mark{font-weight:900;font-size:24px;letter-spacing:-1px;color:#16324a;font-family:"Arial Black",Arial,sans-serif}
+  .logo .mark .amp{color:var(--green)}
+  .logo .sub{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--faint);text-transform:uppercase}
+  .who{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);padding:7px 12px;border-radius:999px;font-size:12.5px;color:var(--muted)}
+  .wrap{max-width:1460px;margin:0 auto;padding:20px 24px 80px}
+  .tabs{display:flex;gap:6px;margin-bottom:18px;background:#fff;padding:5px;border-radius:999px;border:1px solid var(--line);width:fit-content;box-shadow:var(--shadow2)}
+  .tabs button{border:0;background:transparent;cursor:pointer;font-weight:650;font-size:13.5px;color:var(--muted);padding:8px 18px;border-radius:999px;transition:.15s}
+  .tabs button.on{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(46,158,91,.35)}
+  .subtabs{display:flex;gap:6px;margin-bottom:16px}
+  .subtabs button{border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:600;font-size:13px;color:var(--muted);padding:7px 15px;border-radius:999px}
+  .subtabs button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .toolbar{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld label{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+  select,input,button{font-family:inherit;font-size:14px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  select{min-width:170px;font-weight:600}
+  input[type=number]{width:78px;text-align:right}
+  button{cursor:pointer;font-weight:600;transition:.15s}
+  button:hover{border-color:var(--green)}
+  .btn-primary{background:var(--green);border-color:var(--green);color:#fff;padding:10px 20px;box-shadow:0 2px 8px rgba(46,158,91,.3)}
+  .btn-primary:hover{background:var(--green-d);border-color:var(--green-d)}
+  .nav{display:flex;align-items:center;gap:6px}
+  .nav b{font-size:14px;min-width:200px;text-align:center;font-weight:650}
+  .nav button{padding:9px 12px;line-height:1}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+  th,td{padding:10px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line2)}
+  thead-none{}
+  th{background:#fbfcfe;font-weight:700;color:var(--muted);position:sticky;top:0;text-align:center;font-size:12px;letter-spacing:.2px}
+  th.lbl,td.lbl{text-align:left;position:sticky;left:0;z-index:2;background:#fbfcfe;font-weight:650;color:var(--ink);min-width:190px}
+  td.lbl{background:#fff}
+  tbody tr:hover td{background:#f8fafc}
+  tbody tr:hover td.lbl{background:#f2f6fa}
+  tr.sec td{background:linear-gradient(90deg,#eef5f0,#f7fafc);color:var(--green-d);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;text-align:left;font-weight:800;border-left:3px solid var(--green);padding:8px 12px}
+  td.tot,th.tot{background:#eef7f1;font-weight:800;color:var(--ink)}
+  .muted{color:var(--muted)} .faint{color:var(--faint)}
+  .lock{background:#f1f4f8;color:var(--faint);font-style:italic}
+  .ro{background:#fafbfd;color:var(--ink);font-weight:600}
+  .todaycol{background:#eaf1fb!important}
+  th.todaycol{background:#dfeafa!important;color:var(--blue)}
+  .wknd .d{color:var(--warn)}
+  .dow{font-weight:700;color:var(--ink);font-size:12.5px}
+  input[type=number]:focus{outline:2px solid var(--blue);outline-offset:-1px}
+  .big{font-size:15px;font-weight:800;color:#16324a}
+  .delta{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px}
+  .d-up{background:var(--good-bg);color:var(--good)} .d-dn{background:var(--bad-bg);color:var(--bad)} .d-warn{background:var(--warn-bg);color:var(--warn)} .d-0{background:var(--panel2);color:var(--muted)}
+  .actions{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;align-items:center}
+  .hint{font-size:12px;color:var(--muted);margin:12px 2px 0;max-width:1100px}
+  .grp-midi td, td.grp-midi{}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow2)}
+  .kpi .l{font-size:11.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+  .kpi .v{font-size:26px;font-weight:800;margin-top:6px;color:#16324a;line-height:1.1}
+  .kpi .x{margin-top:8px}
+  .ai{background:linear-gradient(180deg,#f0f7ff,#ffffff);border:1px solid #d3e4f5;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow2)}
+  .ai h3{margin:0 0 10px;font-size:14px;display:flex;align-items:center;gap:9px;color:#1f4b7a;text-transform:uppercase;letter-spacing:.5px}
+  .ai .ico{width:26px;height:26px;border-radius:8px;background:#e2eefb;display:flex;align-items:center;justify-content:center;font-size:15px}
+  .ai .sum{font-size:15px;margin:0 0 12px;font-weight:600;color:#22303c}
+  .ai ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+  .ai li{font-size:13.5px;padding-left:20px;position:relative;color:#33424f}
+  .ai li:before{content:"";position:absolute;left:4px;top:7px;width:7px;height:7px;border-radius:50%;background:var(--green)}
+  .bar{height:9px;border-radius:6px;background:#eaeff5;overflow:hidden;min-width:80px;display:inline-block;vertical-align:middle;width:100%}
+  .bar>span{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#3aa76a,#2e9e5b)}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:12px}
+  .rank{display:inline-flex;width:22px;height:22px;border-radius:7px;background:var(--panel2);color:var(--muted);font-weight:800;font-size:11px;align-items:center;justify-content:center;margin-right:6px}
+  .banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#16324a;color:#fff;border:0;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.25);z-index:60}
+  .banner.show{opacity:1} .banner.err{background:var(--bad)}
+  @media(max-width:640px){ .kpi .v{font-size:22px} .wrap{padding:16px 14px 70px} }
+</style>
+</head>
+<body>
+<header>
+  <div class="brandbar">
+    <div class="logo">
+      <div class="mark">SALAD<span class="amp">&amp;</span>CO</div>
+      <div class="sub">Suivi Prod<br>Heures CREW · H EPR</div>
+    </div>
+    <div class="who">
+      <span class="chip" id="userChip">non identifié</span>
+      <button id="loginBtn" title="Renseigner votre email">Identifiant</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button data-view="semaine" class="on">Semaine</button>
+    <button data-view="mois">Mois</button>
+    <button data-view="comparatif">Comparatif sites</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="fld" id="restoWrap"><label>Restaurant</label><select id="resto"></select></div>
+    <div class="fld" id="weekNavWrap"><label>Semaine</label><div class="nav"><button id="prevW">◀</button><b id="weekLabel">—</b><button id="nextW">▶</button></div></div>
+    <div class="fld" id="monthWrap" style="display:none"><label>Mois</label><input type="month" id="monthPick"></div>
+    <div class="fld"><label>&nbsp;</label><button id="reload">↻ Actualiser</button></div>
+  </div>
+
+  <div id="viewSemaine">
+    <div class="card tablewrap"><table id="weekTable"><tbody></tbody></table></div>
+    <div class="actions"><button class="btn-primary" id="saveAll">Enregistrer</button><span class="hint" style="margin:0">Le prévisionnel des jours passés n'est pas modifiable.</span></div>
+    <p class="hint"><b>Prév N</b> calculé via les trames (clients midi+soir). <b>Réception</b> et <b>net glace</b> ajoutés au total semaine seulement. <b>CA & clients</b> (hors collaborateur) et bientôt les <b>heures GoToGir</b> sont automatiques.</p>
+  </div>
+
+  <div id="viewMois" style="display:none">
+    <div class="kpis" id="monthKpis"></div>
+  </div>
+
+  <div id="viewComparatif" style="display:none">
+    <div class="subtabs">
+      <button data-cp="week" class="on">Semaine</button>
+      <button data-cp="month">Mois</button>
+    </div>
+    <div class="ai"><h3><span class="ico">🧠</span> Analyse automatique</h3><div class="sum" id="aiSum">—</div><ul id="aiPoints"></ul></div>
+    <div class="kpis" id="cpKpis"></div>
+    <div class="card tablewrap"><table id="cpTable"><tbody></tbody></table></div>
+    <p class="hint">Le <b>taux de réussite prévisionnel</b> compare le prévisionnel clients (saisi par le directeur) au réalisé Cashpad — 100 % = prévision parfaite. Évolutions vs N‑1 à <b>jour de semaine équivalent</b> et, pour la période en cours, à <b>date comparable</b> (dernier jour clôturé).</p>
+  </div>
+</div>
+
+<div class="banner" id="banner"></div>
+
+<script>
+const SUPA_URL="https://wplolvjziqqvvcydvfxs.supabase.co";
+const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbG9sdmp6aXFxdnZjeWR2ZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTAwNzYsImV4cCI6MjEwMDEyNjA3Nn0.DD2sqXCHcVyETPxb78QiBzH21r73y2CAY5LdXCH5k9w";
+const FN=SUPA_URL+"/functions/v1/prod-api";
+const state={restaurants:[],restaurant:"",weekStart:"",month:"",email:"",data:null,cp:"week"};
+
+const $=s=>document.querySelector(s);
+const euro=n=>(n==null||isNaN(n))?"—":Number(n).toLocaleString('fr-FR',{maximumFractionDigits:0})+" €";
+const h=n=>(n==null||isNaN(n))?"—":Number(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const int=n=>(n==null||isNaN(n))?"—":Number(n).toLocaleString('fr-FR');
+function delta(v,goodUp=true,suffix="%"){ if(v==null||isNaN(v)) return "<span class='delta d-0'>—</span>";
+  const up=v>0, flat=Math.abs(v)<0.05; const cls=flat?"d-0":((up===goodUp)?"d-up":"d-dn");
+  const arr=flat?"→":(up?"▲":"▼"); return `<span class='delta ${cls}'>${arr} ${(v>0?"+":"")}${Number(v).toLocaleString('fr-FR',{maximumFractionDigits:1})}${suffix}</span>`; }
+function toast(m,e){const b=$("#banner");b.textContent=m;b.className="banner show"+(e?" err":"");setTimeout(()=>b.className="banner",2800);}
+
+async function api(action,params={},method="GET",body=null){
+  const qs=new URLSearchParams({action,...params}).toString();
+  const opt={method,headers:{apikey:ANON,Authorization:"Bearer "+ANON,"Content-Type":"application/json"}};
+  if(body)opt.body=JSON.stringify(body);
+  const r=await fetch(FN+"?"+qs,opt);
+  const j=await r.json().catch(()=>({error:"réponse invalide"}));
+  if(!r.ok||j.error)throw new Error(j.error||("HTTP "+r.status));
+  return j;
+}
+function mondayOf(d){const t=new Date(d);const dow=(t.getDay()+6)%7;t.setDate(t.getDate()-dow);return iso(t);}
+function iso(d){return new Date(d).toISOString().slice(0,10);}
+function addDays(s,n){const t=new Date(s+"T00:00:00");t.setDate(t.getDate()+n);return iso(t);}
+function frDate(s){return new Date(s+"T00:00:00").toLocaleDateString('fr-FR',{day:'2-digit',month:'short'});}
+
+function setEmail(e){state.email=e||"";localStorage.setItem("prod_email",state.email);$("#userChip").textContent=(state.email?"👤 "+state.email:"non identifié");}
+$("#loginBtn").onclick=()=>{const e=prompt("Votre email Salad&Co (doit être autorisé) :",state.email);if(e!==null)setEmail(e.trim());};
+
+const DAYS=7;
+function inCell(id,val,cls){return `<td class="${cls||''}"><input type="number" step="any" id="${id}" value="${val==null?'':val}"></td>`;}
+function fcCell(id,val,cls,past){ if(past) return `<td class="lock ${cls||''}">${val==null?'<span class=faint>—</span>':val}</td>`; return inCell(id,val,cls); }
+function ro(txt){return `<td class="ro">${txt}</td>`;}
+
+function renderWeek(d){
+  state.data=d; const today=iso(new Date());
+  const days=d.jours,t=d.totals,ex=d.extra; let html="";
+  html+="<tr><th class='lbl'>Indicateur</th>";
+  for(const j of days){const tod=j.date===today;const we=(j.dow==='Samedi'||j.dow==='Dimanche');
+    html+=`<th class='${tod?'todaycol':''} ${we?'wknd':''}'><span class='dow'>${j.dow.slice(0,3)}</span><br><span class='d faint'>${frDate(j.date)}${tod?' •':''}</span></th>`;}
+  html+="<th class='tot'>SEMAINE</th></tr>";
+
+  html+=sec("Prévisionnel directeur");
+  html+=row("Clients midi",days,(j,i)=>fcCell("mi_"+i,j.midi,"",j.date<today));
+  html+=row("MP TTC midi (€)",days,(j,i)=>fcCell("mm_"+i,j.mp_midi,"",j.date<today));
+  html+=row("Clients soir",days,(j,i)=>fcCell("si_"+i,j.soir,"",j.date<today));
+  html+=row("MP TTC soir (€)",days,(j,i)=>fcCell("ms_"+i,j.mp_soir,"",j.date<today));
+  html+=row("CA prévisionnel",days,(j)=>`<td class='muted' data-caprev>${euro(j.ca_prev)}</td>`,`<td class='tot' id='t_caprev'>${euro(t.ca_prev)}</td>`);
+
+  html+=sec("Besoin en heures — H EPR (Crew)");
+  html+=row("Prév N (trames)",days,(j)=>`<td data-heprprev><b>${h(j.hepr_prev)}</b></td>`,`<td class='tot' id='t_heprprevj'>${h(t.hepr_prev_jours)}</td>`);
+  html+=row("Prév Workforce",days,(j)=>ro(j.prev_wf!=null?h(j.prev_wf):"<span class=faint>GoToGir</span>"),`<td class='tot'>${h(t.prev_wf)}</td>`);
+  html+=row("Réalisé (pointage)",days,(j)=>ro(j.hepr_reel!=null?h(j.hepr_reel):"<span class=faint>GoToGir</span>"),`<td class='tot'>${h(t.hepr_reel)}</td>`);
+  html+=row("Évolution vs Prév N",days,(j)=>`<td>${j.evol_pct!=null?delta(j.evol_pct,false):(j.evol_h!=null?delta(0,false):"<span class=faint>—</span>")}</td>`,`<td class='tot'>${t.evol_pct!=null?delta(t.evol_pct,false):"—"}</td>`);
+
+  html+=sec("Ajouts au total semaine uniquement");
+  html+=`<tr><td class='lbl'>Heures réception</td><td colspan='${DAYS}' class='muted' style='text-align:left'>ajouté au total semaine →</td><td class='tot'><input type='number' step='any' id='w_rec' value='${ex.h_reception??0}'></td></tr>`;
+  html+=`<tr><td class='lbl'>Heures net glace</td><td colspan='${DAYS}' class='muted' style='text-align:left'>ajouté au total semaine →</td><td class='tot'><input type='number' step='any' id='w_gla' value='${ex.h_net_glace??0}'></td></tr>`;
+  html+=`<tr><td class='lbl'><b>Prév N semaine (total)</b></td><td colspan='${DAYS}' class='muted' style='text-align:left'>= Σ jours + réception + net glace</td><td class='tot big' id='t_heprsem'>${h(t.hepr_prev_semaine)}</td></tr>`;
+
+  html+=sec("Réel N & N‑1 — CA / clients hors collaborateur (Cashpad, automatique)");
+  html+=row("CA réalisé N",days,(j)=>ro(euro(j.ca_reel)),`<td class='tot'>${euro(t.ca_reel)}</td>`);
+  html+=row("Clients réalisé N",days,(j)=>ro(int(j.clients_reel)),`<td class='tot'>${int(t.clients_reel)}</td>`);
+  html+=row("CA N‑1",days,(j)=>ro(euro(j.ca_n1)),`<td class='tot'>${euro(t.ca_n1)}</td>`);
+  html+=row("Clients N‑1",days,(j)=>ro(int(j.clients_n1)),`<td class='tot'>${int(t.clients_n1)}</td>`);
+  html+=row("H EPR N‑1",days,(j)=>ro(j.hepr_n1!=null?h(j.hepr_n1):"<span class=faint>GoToGir</span>"),`<td class='tot'>${h(t.hepr_n1)}</td>`);
+
+  const tb=$("#weekTable").querySelector("tbody"); tb.innerHTML=html;
+  const ti=days.findIndex(j=>j.date===today);
+  if(ti>=0) tb.querySelectorAll("tr").forEach(tr=>{const c=tr.children[ti+1];if(c&&!c.hasAttribute('colspan'))c.classList.add('todaycol');});
+  for(let i=0;i<DAYS;i++){["mi_","mm_","si_","ms_"].forEach(p=>{const el=$("#"+p+i);if(el)el.oninput=liveRecalc;});}
+  $("#w_rec").oninput=liveRecalc; $("#w_gla").oninput=liveRecalc;
+}
+function sec(t){return `<tr class='sec'><td colspan='${DAYS+2}'>${t}</td></tr>`;}
+function row(label,days,cellFn,totCell){let r=`<tr><td class='lbl'>${label}</td>`;days.forEach((j,i)=>r+=cellFn(j,i));r+=totCell||"<td class='tot'></td>";return r+"</tr>";}
+
+let TRAMES=[];
+async function loadTrames(){const r=await api("trames",{restaurant:state.restaurant});TRAMES=r.trames||[];}
+function trame(service,n){if(n==null||n===''||isNaN(n))return 0;n=Number(n);const hit=TRAMES.find(t=>t.service===service&&n>=t.client_min&&n<=t.client_max);if(hit)return Number(hit.heures);const svc=TRAMES.filter(t=>t.service===service).sort((a,b)=>a.client_min-b.client_min);return svc.length?Number(svc[svc.length-1].heures):0;}
+function liveRecalc(){
+  const days=state.data?state.data.jours:[];const today=iso(new Date());let sumPrev=0,sumCa=0;
+  const rh=document.querySelectorAll("[data-heprprev]"),rc=document.querySelectorAll("[data-caprev]");
+  for(let i=0;i<DAYS;i++){let hp,ca;
+    if(days[i]&&days[i].date<today){hp=Number(days[i].hepr_prev)||0;ca=Number(days[i].ca_prev)||0;}
+    else{const mi=val("mi_"+i),mm=val("mm_"+i),si=val("si_"+i),ms=val("ms_"+i);hp=trame("midi",mi)+trame("soir",si);ca=(mi||0)*(mm||0)+(si||0)*(ms||0);
+      if(rh[i])rh[i].innerHTML="<b>"+h(hp)+"</b>";if(rc[i])rc[i].textContent=euro(ca);}
+    sumPrev+=hp;sumCa+=ca;}
+  const rec=val("w_rec")||0,gla=val("w_gla")||0;
+  $("#t_heprprevj").textContent=h(sumPrev);$("#t_caprev").textContent=euro(sumCa);$("#t_heprsem").textContent=h(sumPrev+rec+gla);
+}
+function val(id){const e=$("#"+id);if(!e||e.value==="")return null;return Number(e.value);}
+
+async function loadWeek(){
+  try{await loadTrames();const d=await api("week",{restaurant:state.restaurant,week_start:state.weekStart});
+    $("#weekLabel").textContent="du "+frDate(d.week_start)+" au "+frDate(d.week_end);renderWeek(d);
+  }catch(e){toast("Erreur chargement : "+e.message,true);}
+}
+function kpi(l,v,x){return `<div class='kpi'><div class='l'>${l}</div><div class='v'>${v}</div>${x?`<div class='x'>${x}</div>`:''}</div>`;}
+async function loadMonth(){
+  try{const d=await api("month",{restaurant:state.restaurant,mois:state.month});const t=d.totals;
+    $("#monthKpis").innerHTML=[
+      kpi("CA réalisé",euro(t.ca_reel),delta(t.ca_n1>0?round1((t.ca_reel-t.ca_n1)/t.ca_n1*100):null,true)+" <span class='faint' style='font-size:11px'>vs N‑1</span>"),
+      kpi("Clients réalisés",int(t.clients_reel),delta(t.clients_n1>0?round1((t.clients_reel-t.clients_n1)/t.clients_n1*100):null,true)+" <span class='faint' style='font-size:11px'>vs N‑1</span>"),
+      kpi("Prév N mois (H)",h(t.hepr_prev_mois)),
+      kpi("Réalisé pointage (H)",t.hepr_reel>0?h(t.hepr_reel):"<span class='faint' style='font-size:16px'>GoToGir</span>",t.hepr_reel>0?delta(t.evol_pct,false):""),
+      kpi("Productivité CA / h",t.prod_ca_h!=null?euro(t.prod_ca_h):"<span class='faint' style='font-size:16px'>—</span>"),
+      kpi("Clients / h",t.prod_clients_h!=null?h(t.prod_clients_h):"<span class='faint' style='font-size:16px'>—</span>"),
+      kpi("CA N‑1",euro(t.ca_n1))
+    ].join("");
+  }catch(e){toast("Erreur mois : "+e.message,true);}
+}
+function round1(n){return Math.round(n*10)/10;}
+
+function tauxBadge(v){ if(v==null) return "<span class='faint'>—</span>"; const col=v>=90?"var(--good)":v>=75?"var(--warn)":"var(--bad)"; const bg=v>=90?"var(--good-bg)":v>=75?"var(--warn-bg)":"var(--bad-bg)"; return `<span class='badge' style='background:${bg};color:${col}'>${h(v)}%</span>`; }
+async function loadCompare(){
+  try{
+    const params=state.cp==="month"?{period:"month",mois:state.month}:{period:"week",week_start:state.weekStart};
+    const d=await api("compare",params);
+    $("#aiSum").textContent=d.analysis.summary;
+    $("#aiPoints").innerHTML=(d.analysis.points||[]).map(p=>`<li>${p}</li>`).join("");
+    const tt=d.totals;
+    $("#cpKpis").innerHTML=[
+      kpi("CA cumulé (réel)",euro(tt.ca_reel),delta(tt.ca_evol,true)+" <span class='faint' style='font-size:11px'>vs N‑1</span>"),
+      kpi("CA cumulé N‑1",euro(tt.ca_n1)),
+      kpi("Clients cumulés",int(tt.clients_reel)),
+      kpi("Restaurants",String(d.sites.length))
+    ].join("");
+    const maxCa=Math.max(1,...d.sites.map(s=>s.ca_reel));
+    const sites=[...d.sites].sort((a,b)=>b.ca_reel-a.ca_reel);
+    let html="<tr><th class='lbl'>Restaurant</th><th>CA réel</th><th style='text-align:left'>Poids</th><th>vs N‑1</th><th>Clients</th><th>vs N‑1</th><th>Prév HEPR</th><th>Réalisé</th><th>Taux prév.</th><th>CA / h</th></tr>";
+    sites.forEach((s,idx)=>{
+      html+=`<tr><td class='lbl'><span class='rank'>${idx+1}</span>${s.restaurant}</td>`
+        +`<td class='big' style='font-size:13px'>${euro(s.ca_reel)}</td>`
+        +`<td style='min-width:120px'><div class='bar' title='${euro(s.ca_reel)}'><span style='width:${Math.round(s.ca_reel/maxCa*100)}%'></span></div></td>`
+        +`<td>${delta(s.ca_evol,true)}</td>`
+        +`<td>${int(s.clients_reel)}</td>`
+        +`<td>${delta(s.clients_evol,true)}</td>`
+        +`<td>${s.hepr_prev>0?h(s.hepr_prev):'<span class=faint>—</span>'}</td>`
+        +`<td>${s.hepr_reel>0?h(s.hepr_reel):'<span class=faint>GoToGir</span>'}</td>`
+        +`<td>${tauxBadge(s.taux_clients)}</td>`
+        +`<td>${s.prod_ca_h!=null?euro(s.prod_ca_h):'<span class=faint>—</span>'}</td></tr>`;
+    });
+    $("#cpTable").querySelector("tbody").innerHTML=html;
+    $("#weekLabel").textContent=state.cp==="month"?state.month:"du "+frDate(d.ws)+" au "+frDate(d.we);
+  }catch(e){toast("Erreur comparatif : "+e.message,true);}
+}
+
+async function saveAll(){
+  if(!state.email){toast("Renseignez d'abord votre email (bouton Identifiant).",true);return;}
+  try{const today=iso(new Date());const days=[];
+    for(let i=0;i<DAYS;i++){const jour=addDays(state.weekStart,i);
+      if(jour>=today) days.push({jour,midi:val("mi_"+i),soir:val("si_"+i),mp_midi:val("mm_"+i),mp_soir:val("ms_"+i)});}
+    if(days.length) await api("save-forecast",{},"POST",{email:state.email,restaurant:state.restaurant,days});
+    await api("save-week-extra",{},"POST",{email:state.email,restaurant:state.restaurant,week_start:state.weekStart,h_reception:val("w_rec")||0,h_net_glace:val("w_gla")||0});
+    toast("✔ Enregistré");loadWeek();
+  }catch(e){toast("Erreur sauvegarde : "+e.message,true);}
+}
+
+function curView(){const b=document.querySelector(".tabs button[data-view].on");return b?b.dataset.view:"semaine";}
+function switchView(v){
+  document.querySelectorAll(".tabs button[data-view]").forEach(b=>b.classList.toggle("on",b.dataset.view===v));
+  $("#viewSemaine").style.display=v==="semaine"?"":"none";
+  $("#viewMois").style.display=v==="mois"?"":"none";
+  $("#viewComparatif").style.display=v==="comparatif"?"":"none";
+  $("#restoWrap").style.display=(v==="comparatif")?"none":"";
+  $("#weekNavWrap").style.display=(v==="mois"||(v==="comparatif"&&state.cp==="month"))?"none":"";
+  $("#monthWrap").style.display=(v==="mois"||(v==="comparatif"&&state.cp==="month"))?"":"none";
+  if(v==="mois")loadMonth(); if(v==="comparatif")loadCompare();
+}
+
+async function init(){
+  setEmail(localStorage.getItem("prod_email")||"");
+  const today=iso(new Date());state.weekStart=mondayOf(today);state.month=today.slice(0,7);$("#monthPick").value=state.month;
+  try{const b=await api("bootstrap");state.restaurants=b.restaurants||[];
+    $("#resto").innerHTML=state.restaurants.map(r=>`<option value="${r.nom}">${r.nom}</option>`).join("");
+    state.restaurant=state.restaurants[0]?.nom||"";await loadWeek();
+  }catch(e){toast("Impossible de charger les restaurants : "+e.message,true);}
+}
+$("#resto").onchange=e=>{state.restaurant=e.target.value;loadWeek();if(curView()==="mois")loadMonth();};
+$("#prevW").onclick=()=>{state.weekStart=addDays(state.weekStart,-7);curView()==="comparatif"?loadCompare():loadWeek();};
+$("#nextW").onclick=()=>{state.weekStart=addDays(state.weekStart,7);curView()==="comparatif"?loadCompare():loadWeek();};
+$("#monthPick").onchange=e=>{state.month=e.target.value;const v=curView();v==="comparatif"?loadCompare():loadMonth();};
+$("#reload").onclick=()=>{const v=curView();v==="comparatif"?loadCompare():v==="mois"?loadMonth():loadWeek();};
+$("#saveAll").onclick=saveAll;
+document.querySelectorAll(".tabs button[data-view]").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
+document.querySelectorAll(".subtabs button[data-cp]").forEach(b=>b.onclick=()=>{state.cp=b.dataset.cp;document.querySelectorAll(".subtabs button").forEach(x=>x.classList.toggle("on",x.dataset.cp===state.cp));$("#weekNavWrap").style.display=state.cp==="month"?"none":"";$("#monthWrap").style.display=state.cp==="month"?"":"none";loadCompare();});
+init();
+</script>
+</body>
+</html>
