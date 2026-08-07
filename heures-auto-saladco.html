@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pilotage des Heures (API) — Salad&Co</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --line:#e2e6ec; --txt:#1e2430; --mute:#6b7480;
+    --accent:#c79a2b; --n1:#2f6fb0; --obj:#9a7d1e; --reel:#1f8a4c;
+    --over:#c0392b; --under:#1f8a4c; --intar:#6b7480;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+  .wrap{max-width:1120px;margin:0 auto;padding:24px 20px 60px}
+  h1{font-size:22px;margin:0 0 2px} .sub{color:var(--mute);font-size:13px;margin-bottom:18px}
+  .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+  select,button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{border:0;border-radius:0;background:var(--card)}
+  .seg button.on{background:var(--accent);color:#fff;font-weight:600}
+  .badge{font-size:12px;padding:4px 10px;border-radius:20px;border:1px solid var(--line);color:var(--mute);background:var(--card)}
+  .badge.ok{color:var(--reel);border-color:#bfe0cc;background:#eef8f1}
+  .badge.warn{color:#9a7d1e;border-color:#ecdca6;background:#fbf6e6}
+  .badge.load{color:#2f6fb0;border-color:#bcd4ee;background:#eef4fb}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);font-size:13px}
+  th{color:var(--mute);font-weight:600;font-size:12px;background:#fafbfc}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:hover td{background:#f7f9fb}
+  tr:last-child td{border-bottom:0}
+  tr.tot td{font-weight:700;background:#eef1f5}
+  tr.tot:hover td{background:#eef1f5}
+  .paren{color:var(--mute);font-weight:400;font-size:11px}
+  .over{color:var(--over)} .under{color:var(--under)} .intar{color:var(--intar)}
+  .tag{font-size:10px;padding:1px 6px;border-radius:10px;border:1px solid var(--line);color:var(--mute);margin-left:6px}
+  .empty{padding:30px;text-align:center;color:var(--mute)}
+  .foot{margin-top:18px;color:var(--mute);font-size:12px}
+  .who{font-size:12px;color:var(--mute)} .who a{color:var(--n1);cursor:pointer;text-decoration:underline}
+  .nameov{position:fixed;inset:0;background:rgba(20,30,50,.45);display:flex;align-items:center;justify-content:center;z-index:50}
+  .namebox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px;max-width:360px;width:90%;box-shadow:0 8px 30px rgba(20,30,50,.2)}
+  .namebox h3{margin:0 0 8px;font-size:18px} .namebox p{margin:0 0 12px;color:var(--mute);font-size:13px}
+  .namebox input,.namebox select{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;margin-bottom:12px;background:var(--card);color:var(--txt)}
+  .namebox button{width:100%;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:10px;font-weight:600;cursor:pointer}
+  .bar input{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px}
+  #adminbar{display:none;flex-wrap:wrap;gap:10px;align-items:center;margin:-6px 0 16px;padding:10px 12px;border:1px dashed var(--line);border-radius:8px;background:#fafbfc}
+  #adminbar.on{display:flex}
+  #adminbar button.pri{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pilotage des Heures <span class="tag">API GoToGir</span></h1>
+  <div class="sub">Réalisé N-1 · Objectivé 2026 (absences entre parenthèses) · Réel à date + prévisionnel fin de mois (pointages + planning GoToGir).</div>
+
+  <div class="bar">
+    <label>Mois&nbsp;<select id="mois"></select></label>
+    <div class="seg" id="fam">
+      <button data-f="total" class="on">Total (EM + Encad.)</button>
+      <button data-f="EM">EM</button>
+      <button data-f="ENCAD">Encadrement</button>
+    </div>
+    <button id="refresh">↻ Actualiser</button>
+    <span id="apiBadge" class="badge">…</span>
+    <span id="who" class="who"></span>
+    <a id="adminLink" class="who" style="cursor:pointer;text-decoration:underline">· Accès admin (connexions)</a>
+  </div>
+
+  <div class="bar" id="adminbar">
+    <input id="acode" type="password" placeholder="Code admin" autocomplete="off" style="min-width:200px"/>
+    <button id="ago" class="pri">Voir les connexions</button>
+    <button id="aback" style="display:none">← Retour aux heures</button>
+  </div>
+
+  <div id="content"><div class="empty">Chargement…</div></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const EDGE="https://wplolvjziqqvvcydvfxs.supabase.co/functions/v1/heures-api";
+const ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwbG9sdmp6aXFxdnZjeWR2ZnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NTAwNzYsImV4cCI6MjEwMDEyNjA3Nn0.DD2sqXCHcVyETPxb78QiBzH21r73y2CAY5LdXCH5k9w";
+const PROXY="https://contrats-salad.onrender.com";
+const MOIS_FR=['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const nf=new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0});
+const fmt=v=>v==null?'—':nf.format(Math.round(v));
+const $=s=>document.querySelector(s);
+let STATE={fam:'total',mois:null,reference:[],unites:[],full:null,adate:null,loading:false,adminView:false};
+
+/* ---- Traceur de connexions : nom saisi une fois, enregistré à chaque ouverture ---- */
+const LOGKEY='heures_user_name', DEVKEY='heures_device_id';
+function deviceId(){ let d=null; try{ d=localStorage.getItem(DEVKEY);}catch(e){} if(!d){ d='d'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); try{localStorage.setItem(DEVKEY,d);}catch(e){} } return d; }
+function logVisit(name){ try{ fetch(`${EDGE}?action=log`,{method:'POST',headers:{apikey:ANON,Authorization:`Bearer ${ANON}`,'Content-Type':'application/json'},body:JSON.stringify({name:name||'?',device:deviceId()})}); }catch(e){} }
+const RESTOS_LIST=['ADEO RONCHIN','BTWIN','CAEN','CAMPUS','HERON','KIABI LEZENNES','LE PONTET','LILLE','MERIGNAC','NOYELLES','TOULON','VILLENAVE','Direction / Siège'];
+function askName(){
+  return new Promise(res=>{
+    const ov=document.createElement('div'); ov.className='nameov';
+    const opts='<option value="" disabled selected>— Votre restaurant —</option>'+RESTOS_LIST.map(r=>`<option value="${r}">${r}</option>`).join('');
+    ov.innerHTML='<div class="namebox"><h3>Bienvenue 👋</h3><p>Indiquez votre prénom et votre restaurant. Ce sera mémorisé sur cet appareil.</p><input id="nmp" placeholder="Votre prénom" autocomplete="off"/><select id="nmi">'+opts+'</select><button id="nmb">Continuer</button></div>';
+    document.body.appendChild(ov);
+    const done=()=>{ const p=(ov.querySelector('#nmp').value||'').trim(); const r=(ov.querySelector('#nmi').value||'').trim(); if(!p){ov.querySelector('#nmp').focus();return;} if(!r){ov.querySelector('#nmi').focus();return;} const v=p+' — '+r; try{localStorage.setItem(LOGKEY,v);}catch(e){} ov.remove(); res(v); };
+    ov.querySelector('#nmb').onclick=done;
+    ov.querySelector('#nmp').addEventListener('keydown',e=>{if(e.key==='Enter')done();});
+    setTimeout(()=>ov.querySelector('#nmp').focus(),50);
+  });
+}
+/* helpers connexions (vue admin) */
+function fmtD(d){return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;}
+function fmtDT(d){return `${fmtD(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function escH(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+async function loadConnections(){
+  const code=($('#acode').value||'').trim();
+  if(!code){ $('#acode').focus(); return; }
+  $('#content').innerHTML='<div class="empty">Chargement des connexions…</div>';
+  try{
+    const r=await fetch(`${EDGE}?action=stats&key=${encodeURIComponent(code)}`,{headers:{apikey:ANON,Authorization:`Bearer ${ANON}`}});
+    const data=await r.json();
+    if(data.error){ $('#content').innerHTML=`<div class="empty">${escH(data.error)}</div>`; return; }
+    STATE.adminView=true; $('#aback').style.display=''; renderConnections(data.visits||[]);
+  }catch(e){ $('#content').innerHTML=`<div class="empty">Erreur : ${escH(e.message)}</div>`; }
+}
+function renderConnections(visits){
+  const rows=visits.map(v=>({name:(v.name||'?').trim()||'?',device:v.device||'',ip:v.ip||'',ts:new Date(v.ts)})).filter(v=>!isNaN(v.ts));
+  rows.sort((a,b)=>b.ts-a.ts);
+  const total=rows.length;
+  if(!total){ $('#content').innerHTML='<div class="empty">Aucune connexion enregistrée pour l’instant.</div>'; $('#foot').innerHTML=''; return; }
+  const now=new Date(); const d7=new Date(now.getTime()-7*864e5);
+  const last7=rows.filter(v=>v.ts>=d7).length;
+  const byName={};
+  rows.forEach(v=>{const k=v.name;(byName[k]||(byName[k]={n:0,first:v.ts,last:v.ts,devs:new Set()}));const o=byName[k];o.n++;if(v.ts<o.first)o.first=v.ts;if(v.ts>o.last)o.last=v.ts;if(v.device)o.devs.add(v.device);});
+  const people=Object.entries(byName).map(([name,o])=>({name,...o})).sort((a,b)=>b.n-a.n);
+  const peopleRows=people.map(p=>`<tr><td>${escH(p.name)}</td><td class="num">${fmt(p.n)}</td><td class="num">${p.devs.size}</td><td>${fmtD(p.first)}</td><td>${fmtDT(p.last)}</td></tr>`).join('');
+  const recent=rows.slice(0,30).map(v=>`<tr><td>${escH(v.name)}</td><td>${fmtDT(v.ts)}</td><td>${escH(v.ip)||'—'}</td></tr>`).join('');
+  $('#content').innerHTML=`
+    <p class="foot" style="margin:0 0 12px"><b>${fmt(total)}</b> connexions · <b>${fmt(people.length)}</b> visiteurs distincts · <b>${fmt(last7)}</b> sur 7 jours · dernière : ${fmtDT(rows[0].ts)}</p>
+    <table><thead><tr><th>Nom</th><th class="num">Connexions</th><th class="num">Appareils</th><th>1ʳᵉ visite</th><th>Dernière visite</th></tr></thead><tbody>${peopleRows}</tbody></table>
+    <div style="height:14px"></div>
+    <table><thead><tr><th>Nom</th><th>Date &amp; heure</th><th>IP</th></tr></thead><tbody>${recent}</tbody></table>`;
+  $('#foot').innerHTML='Vue administrateur : lecture des connexions à l’outil.';
+}
+function showWho(name){ const w=$('#who'); if(!w) return; w.innerHTML=`Connecté : <b>${(name||'?').replace(/</g,'&lt;')}</b> · <a id="chgWho">changer</a>`; const a=$('#chgWho'); if(a) a.onclick=async()=>{ try{localStorage.removeItem(LOGKEY);}catch(e){} const n=await askName(); showWho(n); logVisit(n); }; }
+async function trackVisit(){
+  let name=null; try{ name=localStorage.getItem(LOGKEY);}catch(e){}
+  if(!name){ name=await askName(); }
+  showWho(name); logVisit(name);
+}
+
+function edge(action,mois){
+  return fetch(`${EDGE}?action=${action}${mois?`&mois=${mois}`:''}`,{headers:{apikey:ANON,Authorization:`Bearer ${ANON}`}}).then(r=>r.json());
+}
+const pad=n=>String(n).padStart(2,'0');
+function bounds(mois){
+  const [y,m]=mois.split('-').map(Number);
+  const start=`${y}-${pad(m)}-01`;
+  const last=new Date(Date.UTC(y,m,0)).getUTCDate();
+  const monthEnd=`${y}-${pad(m)}-${pad(last)}`;
+  const n=new Date(); const today=`${n.getUTCFullYear()}-${pad(n.getUTCMonth()+1)}-${pad(n.getUTCDate())}`;
+  const inMonth=(today>=start&&today<=monthEnd);
+  return {start, monthEnd, aDateEnd: inMonth?today:monthEnd, isCurrent:inMonth};
+}
+
+async function boot(){
+  trackVisit();
+  let months=[];
+  try{ const m=await edge('months'); months=(m.months||[]); }catch(e){}
+  if(!months.length){ for(let i=1;i<=12;i++) months.push('2026-'+pad(i)); }
+  const now=new Date(); const cur=now.getUTCFullYear()+'-'+pad(now.getUTCMonth()+1);
+  STATE.mois=months.includes(cur)?cur:months[months.length-1];
+  const sel=$('#mois'); sel.innerHTML=months.map(mm=>{const[y,mo]=mm.split('-');return `<option value="${mm}" ${mm===STATE.mois?'selected':''}>${MOIS_FR[+mo]} ${y}</option>`;}).join('');
+  sel.onchange=()=>{STATE.mois=sel.value;load();};
+  $('#refresh').onclick=load;
+  document.querySelectorAll('#fam button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#fam button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); STATE.fam=b.dataset.f; STATE.adminView=false; $('#aback').style.display='none'; render();
+  });
+  $('#adminLink').onclick=()=>{ const ab=$('#adminbar'); ab.classList.toggle('on'); if(ab.classList.contains('on')) $('#acode').focus(); };
+  $('#ago').onclick=loadConnections;
+  $('#acode').addEventListener('keydown',e=>{if(e.key==='Enter')loadConnections();});
+  $('#aback').onclick=()=>{ STATE.adminView=false; $('#aback').style.display='none'; load(); };
+  load();
+}
+
+async function load(){
+  STATE.adminView=false; $('#aback').style.display='none';
+  $('#content').innerHTML='<div class="empty">Chargement des références…</div>';
+  STATE.full=null; STATE.adate=null; STATE.loading=true;
+  try{
+    const ref=await edge('reference',STATE.mois);
+    STATE.reference=ref.reference||[]; STATE.unites=ref.unites||[];
+    render();
+    fetchEstim();
+  }catch(e){
+    $('#content').innerHTML=`<div class="empty">Erreur de chargement : ${e.message}</div>`;
+  }
+}
+
+async function fetchEstim(){
+  setBadge('load','Chargement réel + prévisionnel GoToGir… (réveil du service ~30 s au 1er appel)');
+  try{
+    const ids=STATE.unites.filter(u=>u.business_unit_id!=null).map(u=>u.business_unit_id);
+    if(!ids.length){ STATE.loading=false; setBadge('warn','Aucune unité mappée'); return; }
+    const b=bounds(STATE.mois);
+    const q=`units=${ids.join(',')}`;
+    const [full, adate]=await Promise.all([
+      fetch(`${PROXY}/estim?${q}&from=${b.start}&to=${b.monthEnd}`).then(x=>x.json()),
+      fetch(`${PROXY}/estim?${q}&from=${b.start}&to=${b.aDateEnd}`).then(x=>x.json()),
+    ]);
+    const mapOf=(res)=>{ const by=res.estim||{}; const m={}; STATE.unites.forEach(u=>{ const c=by[u.business_unit_id]; if(c&&c.raw!=null) m[u.restaurant]={raw:c.raw, em:c.em, encad:c.encad}; }); return m; };
+    STATE.full=mapOf(full); STATE.adate=mapOf(adate); STATE.loading=false;
+    const n=Object.keys(STATE.full).length;
+    if(n) setBadge('ok',`GoToGir connecté — ${n} restaurant(s), réel + planning`);
+    else setBadge('warn','GoToGir a répondu mais 0 heure — vérifier la période');
+    render();
+  }catch(e){
+    STATE.loading=false; setBadge('warn','Proxy GoToGir injoignable — réel = mois clôturés');
+    render();
+  }
+}
+function setBadge(cls,txt){ const ab=$('#apiBadge'); ab.className='badge '+cls; ab.textContent=txt; }
+function ecCls(e){return e==null?'':(e>5?'over':(e<-5?'under':'intar'));}
+
+function render(){
+  if(STATE.adminView) return;
+  const idx={};
+  STATE.reference.forEach(r=>{(idx[r.restaurant]||(idx[r.restaurant]={}))[r.categorie]=r;});
+  const restos=[...new Set(STATE.reference.map(r=>r.restaurant))].sort((a,b)=>a.localeCompare(b));
+  const [yy,mm]=STATE.mois.split('-'); const lbl=`${MOIS_FR[+mm]} ${yy}`;
+  const fam=STATE.fam; const isTotal=fam==='total';
+  const b=bounds(STATE.mois);
+
+  let tN1=0,tO=0,tA=0,tEst=0,anyEst=false,anyA=false;
+  const body=restos.map(resto=>{
+    const em=(idx[resto]||{}).EM, en=(idx[resto]||{}).ENCAD;
+    let n1,obj,abs,clo;
+    if(isTotal){
+      n1=((em&&em.realise_n1)||0)+((en&&en.realise_n1)||0);
+      obj=((em&&em.objectif)||0)+((en&&en.objectif)||0);
+      abs=(em&&em.absences_obj!=null)?em.absences_obj:null;
+      clo=((em&&em.realise_cloture!=null)||(en&&en.realise_cloture!=null))?(((em&&em.realise_cloture)||0)+((en&&en.realise_cloture)||0)):null;
+    } else { const v=(idx[resto]||{})[fam]||{}; n1=v.realise_n1; obj=v.objectif; abs=v.absences_obj; clo=v.realise_cloture; }
+
+    // Réel + prévisionnel (planning) GoToGir, dissocié EM / Encadrement ; sinon réalisé clôturé de référence
+    const sk = isTotal ? 'raw' : (fam==='EM' ? 'em' : 'encad');
+    let est=null, adate=null, src=null;
+    if(STATE.full && STATE.full[resto]!=null && STATE.full[resto][sk]!=null){
+      est=STATE.full[resto][sk];
+      adate=(STATE.adate&&STATE.adate[resto]!=null&&STATE.adate[resto][sk]!=null)?STATE.adate[resto][sk]:null;
+      src='live';
+    } else if(!STATE.loading && clo!=null){ est=clo; src='clo'; }
+    const showADate = b.isCurrent && src==='live' && adate!=null && adate < est-0.5;
+    const cell = STATE.loading ? '<span class="paren">…</span>' :
+      (est==null ? '—' :
+        `${fmt(est)}${showADate?` <span class="paren" title="Réel pointé à date (le reste = planning projeté)">(${fmt(adate)} à date)</span>`:(src==='clo'?'<span class="tag">clôturé</span>':'')}`);
+
+    const ec=(obj!=null&&est!=null)?est-obj:null;
+    if(n1!=null)tN1+=n1; if(obj!=null)tO+=obj; if(abs!=null){tA+=abs;anyA=true;}
+    if(est!=null){tEst+=est;anyEst=true;}
+    return `<tr>
+      <td>${resto}</td>
+      <td class="num" style="color:var(--n1)">${fmt(n1)}</td>
+      <td class="num" style="color:var(--obj)">${fmt(obj)}${abs!=null?` <span class="paren" title="Absences payées EM (prévision)">(${fmt(abs)} abs.)</span>`:''}</td>
+      <td class="num" style="color:var(--reel)">${cell}</td>
+      <td class="num ${ecCls(ec)}">${ec==null?'—':(ec>0?'+':'')+fmt(ec)}</td>
+    </tr>`;
+  }).join('');
+
+  const ecT=(anyEst)?tEst-tO:null;
+  const scopeLbl=fam==='EM'?'EM':(fam==='ENCAD'?'Encad.':'Total');
+  $('#content').innerHTML=`<table>
+    <thead><tr>
+      <th>Restaurant <span class="paren">(${scopeLbl})</span></th>
+      <th class="num">Réalisé N-1 (${+yy-1})</th>
+      <th class="num">Objectivé ${lbl}</th>
+      <th class="num">Réel + prév. fin mois</th>
+      <th class="num">Écart (estim. − obj.)</th>
+    </tr></thead>
+    <tbody>${body}
+      <tr class="tot">
+        <td>TOTAL</td>
+        <td class="num">${fmt(tN1)}</td>
+        <td class="num">${fmt(tO)}${anyA?` <span class="paren">(${fmt(tA)} abs.)</span>`:''}</td>
+        <td class="num">${STATE.loading?'<span class="paren">…</span>':(anyEst?fmt(tEst):'—')}</td>
+        <td class="num ${ecCls(ecT)}">${ecT==null?'—':(ecT>0?'+':'')+fmt(ecT)}</td>
+      </tr>
+    </tbody></table>`;
+
+  $('#foot').innerHTML = b.isCurrent
+    ? 'Colonne = réel pointé à date + prévisionnel issu du planning GoToGir jusqu’à la fin du mois, dissocié EM (polyvalents) / Encadrement (cadres + agents de maîtrise) via la catégorie du salarié. Écart = estimation fin de mois − objectif. Réalisé N-1 et Objectif : base Supabase.'
+    : 'Colonne = heures réelles du mois (pointages GoToGir), dissociées EM / Encadrement. Mois clôturé. Réalisé N-1 et Objectif : base Supabase.';
+}
+
+boot();
+</script>
+</body>
+</html>
